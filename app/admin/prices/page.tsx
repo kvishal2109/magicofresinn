@@ -25,7 +25,12 @@ export default function PricesPage() {
         <p className="text-gray-600 mt-1">Bulk update product prices</p>
       </div>
 
-      <PriceBulkEditor products={products} onUpdate={() => mutate()} />
+      <PriceBulkEditor
+        products={products}
+        onUpdate={async () => {
+          await mutate();
+        }}
+      />
     </div>
   );
 }
