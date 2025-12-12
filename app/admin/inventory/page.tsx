@@ -3,6 +3,8 @@
 import InventoryEditor from "@/components/admin/InventoryEditor";
 import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 
+// Inventory management page
+
 export default function InventoryPage() {
   const {
     products,
