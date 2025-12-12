@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as BlobProducts from "@/lib/blob/products";
+import * as SupabaseProducts from "@/lib/supabase/products";
 import { Product } from "@/types";
 
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
     if (authError) return authError;
 
     const { id } = await params;
-    const product = await BlobProducts.getProductById(id);
+    const product = await SupabaseProducts.getProductById(id);
 
     if (!product) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function PUT(
     if (body.catalogId !== undefined) updates.catalogId = body.catalogId;
     if (body.catalogName !== undefined) updates.catalogName = body.catalogName;
 
-    await BlobProducts.updateProduct(id, updates);
+    await SupabaseProducts.updateProduct(id, updates);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -79,7 +79,7 @@ export async function DELETE(
     if (authError) return authError;
 
     const { id } = await params;
-    await BlobProducts.deleteProduct(id);
+    await SupabaseProducts.deleteProduct(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

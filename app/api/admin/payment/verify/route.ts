@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPaymentManually } from "@/lib/blob/orders";
+import { verifyPaymentManually } from "@/lib/supabase/orders";
 import { requireAuth } from "@/lib/admin/auth";
 
 export async function POST(request: NextRequest) {

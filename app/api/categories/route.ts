@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllCategories } from "@/lib/blob/products";
+import { getAllCategories } from "@/lib/supabase/products";
 
 // Cache categories API for 10 minutes (categories rarely change)
 export const revalidate = 600;

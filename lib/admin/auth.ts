@@ -1,29 +1,20 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminPassword, saveAdminPassword } from "@/lib/blob/storage";
+import { getStoredPassword, saveAdminPassword } from "@/lib/supabase/auth";
 
-const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-// Get admin password (from blob storage or env var)
-async function getStoredPassword(): Promise<string> {
-  const storedPassword = await getAdminPassword();
-  return storedPassword || DEFAULT_ADMIN_PASSWORD;
-}
 
 // Simple session token generation
 function generateSessionToken(): string {
   return Buffer.from(`${Date.now()}-${Math.random()}`).toString("base64");
 }
 
-// Verify password
 export async function verifyPassword(password: string): Promise<boolean> {
   const storedPassword = await getStoredPassword();
   return password === storedPassword;
 }
 
-// Reset password
 export async function resetPassword(newPassword: string): Promise<void> {
   await saveAdminPassword(newPassword);
 }

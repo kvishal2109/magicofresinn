@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOrder } from "@/lib/blob/orders";
+import { createOrder } from "@/lib/supabase/orders";
 import { CheckoutFormData, CartItem } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create order in Vercel Blob
     const orderId = await createOrder(
       customerData,
       items,

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as BlobProducts from "@/lib/blob/products";
+import * as SupabaseProducts from "@/lib/supabase/products";
 
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
-    const products = await BlobProducts.getAllProducts();
-    const categories = await BlobProducts.getAllCategories();
+    const categories = await SupabaseProducts.getAllCategories();
     return NextResponse.json({ success: true, categories });
   } catch (error: any) {
     console.error("Error fetching categories:", error);
@@ -41,7 +40,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    await BlobProducts.bulkUpdateCategory(oldCategory, newCategory);
+    await SupabaseProducts.bulkUpdateCategory(oldCategory, newCategory);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error updating category:", error);
@@ -67,7 +66,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await BlobProducts.deleteCategory(category);
+    await SupabaseProducts.deleteCategory(category);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error deleting category:", error);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as BlobOrders from "@/lib/blob/orders";
+import { getOrderById, updateOrderStatus } from "@/lib/supabase/orders";
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
     if (authError) return authError;
 
     const { id } = await params;
-    const order = await BlobOrders.getOrderById(id);
+    const order = await getOrderById(id);
 
     if (!order) {
       return NextResponse.json(
@@ -57,7 +57,7 @@ export async function PUT(
       );
     }
 
-    await BlobOrders.updateOrderStatus(id, orderStatus);
+    await updateOrderStatus(id, orderStatus);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as BlobProducts from "@/lib/blob/products";
+import * as SupabaseProducts from "@/lib/supabase/products";
 import { Product } from "@/types";
 
 // Cache products API for 5 minutes
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
-    const products = await BlobProducts.getAllProducts();
+    const products = await SupabaseProducts.getAllProducts();
     return NextResponse.json({ success: true, products });
   } catch (error: any) {
     console.error("Error fetching products:", error);
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       catalogName: catalogName || undefined,
     };
 
-    const productId = await BlobProducts.createProduct(productData);
+    const productId = await SupabaseProducts.createProduct(productData);
 
     return NextResponse.json({ success: true, productId });
   } catch (error: any) {

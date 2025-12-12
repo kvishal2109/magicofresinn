@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProductsByCatalog } from "@/lib/blob/products";
+import { getProductsByCatalog } from "@/lib/supabase/products";
 
 interface Params {
   params: Promise<{

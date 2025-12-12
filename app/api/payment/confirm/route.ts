@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateOrderPaymentStatus, getOrderById } from "@/lib/blob/orders";
-import { put } from "@vercel/blob";
+import { getOrderById, updateOrderPaymentStatus } from "@/lib/supabase/orders";
+import { uploadImage } from "@/lib/cloudinary/client";
+import { getSupabaseAdmin } from "@/lib/supabase/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,45 +41,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload payment proof if provided
     let paymentProofUrl: string | undefined;
     if (paymentProof) {
       try {
-        const blob = await put(
-          `payment-proofs/${orderId}-${Date.now()}-${paymentProof.name}`,
-          paymentProof,
-          {
-            access: "public",
-            contentType: paymentProof.type,
-          }
-        );
-        paymentProofUrl = blob.url;
+        const { url } = await uploadImage(paymentProof, "payment-proofs");
+        paymentProofUrl = url;
       } catch (error) {
         console.error("Error uploading payment proof:", error);
-        // Continue even if upload fails
       }
     }
 
-    // Update order with payment details
-    // We'll need to extend the updateOrderPaymentStatus function to handle these fields
-    // For now, update status to pending_verification
     await updateOrderPaymentStatus(orderId, "pending_verification", utrNumber);
 
-    // Update additional payment fields
-    // We need to modify the orders blob directly to add UTR and proof URL
-    const { getOrdersBlob, saveOrdersBlob } = await import("@/lib/blob/storage");
-    const orders = await getOrdersBlob();
-    const orderIndex = orders.findIndex((o: any) => o.id === orderId);
-    
-    if (orderIndex !== -1) {
-      orders[orderIndex].utrNumber = utrNumber.trim();
-      if (paymentProofUrl) {
-        orders[orderIndex].paymentProofUrl = paymentProofUrl;
-      }
-      orders[orderIndex].paymentSubmittedAt = new Date();
-      orders[orderIndex].updatedAt = new Date();
-      
-      await saveOrdersBlob(orders);
+    const supabase = getSupabaseAdmin();
+    const updateData: any = {
+      utr_number: utrNumber.trim(),
+      payment_submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (paymentProofUrl) {
+      updateData.payment_proof_url = paymentProofUrl;
+    }
+
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', orderId);
+
+    if (updateError) {
+      console.error("Error updating order payment details:", updateError);
     }
 
     return NextResponse.json({

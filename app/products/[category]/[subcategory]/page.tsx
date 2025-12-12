@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import SubcategoryProductsClient from "@/components/products/SubcategoryProductsClient";
-import { getAllProducts } from "@/lib/blob/products";
+import { getAllProducts } from "@/lib/supabase/products";
 import { getCategoryNameFromSlug, getSubcategoryNameFromSlug } from "@/lib/data/categoryMaps";
 
 export const revalidate = 300;

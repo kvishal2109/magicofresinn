@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as Storage from "@/lib/blob/storage";
+import * as CategoriesStorage from "@/lib/supabase/categories";
 
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
-    const metadata = await Storage.getCategoriesMetadata();
+    const metadata = await CategoriesStorage.getCategoriesMetadata();
     return NextResponse.json({ success: true, metadata });
   } catch (error: any) {
     console.error("Error fetching categories metadata:", error);
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      await Storage.updateCategoryImage(categoryName, imageUrl || null);
+      await CategoriesStorage.updateCategoryImage(categoryName, imageUrl || null);
     } else if (type === "subcategory") {
       if (!categoryName || !subcategoryName) {
         return NextResponse.json(
@@ -41,7 +41,7 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      await Storage.updateSubcategoryImage(categoryName, subcategoryName, imageUrl || null);
+      await CategoriesStorage.updateSubcategoryImage(categoryName, subcategoryName, imageUrl || null);
     } else {
       return NextResponse.json(
         { error: "Invalid type. Must be 'category' or 'subcategory'" },

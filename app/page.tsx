@@ -1,5 +1,5 @@
 import HomeClient from "@/components/home/HomeClient";
-import { getAllProducts, getAllCategories } from "@/lib/blob/products";
+import { getAllProducts, getAllCategories } from "@/lib/supabase/products";
 
 export const revalidate = 300;
 

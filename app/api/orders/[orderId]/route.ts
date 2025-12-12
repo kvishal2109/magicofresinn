@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById } from "@/lib/blob/orders";
+import { getOrderById } from "@/lib/supabase/orders";
 
 export async function GET(
   request: NextRequest,

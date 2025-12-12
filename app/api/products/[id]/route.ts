@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProductById } from "@/lib/blob/products";
+import { getProductById } from "@/lib/supabase/products";
 
 export async function GET(
   request: Request,

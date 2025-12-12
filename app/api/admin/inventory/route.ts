@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import * as BlobProducts from "@/lib/blob/products";
+import * as SupabaseProducts from "@/lib/supabase/products";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await BlobProducts.bulkUpdateInventory(updates);
+    await SupabaseProducts.bulkUpdateInventory(updates);
 
     return NextResponse.json({ success: true });
   } catch (error) {
