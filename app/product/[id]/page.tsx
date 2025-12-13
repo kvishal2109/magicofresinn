@@ -11,9 +11,10 @@ interface PageParams {
 export default async function ProductDetailPage({
   params,
 }: {
-  params: PageParams;
+  params: Promise<PageParams>;
 }) {
-  const product = await getProductById(params.id);
+  const resolvedParams = await params;
+  const product = await getProductById(resolvedParams.id);
 
   if (!product) {
     notFound();

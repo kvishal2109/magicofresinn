@@ -16,12 +16,16 @@ export async function getAllProducts(): Promise<Product[]> {
 
     if (error) {
       console.error("Error fetching products from Supabase:", error);
+      console.log("Falling back to hardcoded products");
       return hardcodedProducts;
     }
 
     if (!data || data.length === 0) {
+      console.log("No products in database, using hardcoded products");
       return hardcodedProducts;
     }
+
+    console.log(`Found ${data.length} products in database`);
 
     // Convert database format to Product format
     const products: Product[] = data.map((row: any) => ({
@@ -42,6 +46,26 @@ export async function getAllProducts(): Promise<Product[]> {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     }));
+
+    // Log product distribution by category
+    const categoryCounts = products.reduce((acc, p) => {
+      acc[p.category] = (acc[p.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log("Products by category:", categoryCounts);
+
+    // If we have very few products or missing categories, merge with hardcoded
+    const hasAllCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"].every(
+      cat => products.some(p => p.category === cat)
+    );
+
+    if (!hasAllCategories || products.length < 10) {
+      console.log("Database has incomplete product data, merging with hardcoded products");
+      // Merge: use database products, but add hardcoded ones that don't exist
+      const dbProductIds = new Set(products.map(p => p.id));
+      const additionalProducts = hardcodedProducts.filter(p => !dbProductIds.has(p.id));
+      return [...products, ...additionalProducts];
+    }
 
     return products;
   } catch (error) {
@@ -151,29 +175,29 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
  * Get all categories
  */
 export async function getAllCategories(): Promise<string[]> {
+  // Always include standard categories, even if they have no products
+  const standardCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
+  
   try {
     const products = await getAllProducts();
     
-    if (!products || products.length === 0) {
-      const categories = [...new Set(hardcodedProducts.map((p) => p.category))];
-      const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-      const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
-      const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
-      return [...orderedCategories, ...remainingCategories];
-    }
+    // Get categories from products
+    const productCategories = products && products.length > 0 
+      ? [...new Set(products.map((p) => p.category).filter(Boolean))]
+      : [];
     
-    const categories = [...new Set(products.map((p) => p.category))];
-    const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-    const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
-    const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
+    // Combine standard categories with any additional categories from products
+    const allCategories = new Set([...standardCategories, ...productCategories]);
+    
+    // Order: standard categories first, then any additional ones
+    const orderedCategories = standardCategories.filter(cat => allCategories.has(cat));
+    const remainingCategories = Array.from(allCategories).filter(cat => !standardCategories.includes(cat));
+    
     return [...orderedCategories, ...remainingCategories];
   } catch (error) {
-    console.error("Error fetching categories, using hardcoded:", error);
-    const categories = [...new Set(hardcodedProducts.map((p) => p.category))];
-    const categoryOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-    const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
-    const remainingCategories = categories.filter(cat => !categoryOrder.includes(cat));
-    return [...orderedCategories, ...remainingCategories];
+    console.error("Error fetching categories, using standard categories:", error);
+    // Return standard categories as fallback
+    return standardCategories;
   }
 }
 
@@ -233,9 +257,27 @@ export async function updateProduct(
 
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.price !== undefined) updateData.price = updates.price;
-    if (updates.originalPrice !== undefined) updateData.original_price = updates.originalPrice;
-    if (updates.discount !== undefined) updateData.discount = updates.discount;
+    if (updates.price !== undefined && updates.price !== null) {
+      const priceValue = Number(updates.price);
+      if (!isNaN(priceValue)) {
+        updateData.price = priceValue;
+        console.log("Updating price in database to:", priceValue);
+      } else {
+        console.warn("Invalid price value in updateProduct:", updates.price);
+      }
+    }
+    if (updates.originalPrice !== undefined && updates.originalPrice !== null) {
+      const originalPriceValue = Number(updates.originalPrice);
+      if (!isNaN(originalPriceValue)) {
+        updateData.original_price = originalPriceValue;
+      }
+    }
+    if (updates.discount !== undefined && updates.discount !== null) {
+      const discountValue = Number(updates.discount);
+      if (!isNaN(discountValue)) {
+        updateData.discount = discountValue;
+      }
+    }
     if (updates.image !== undefined) updateData.image = updates.image;
     if (updates.images !== undefined) updateData.images = updates.images;
     if (updates.category !== undefined) updateData.category = updates.category;
@@ -245,14 +287,19 @@ export async function updateProduct(
     if (updates.catalogId !== undefined) updateData.catalog_id = updates.catalogId;
     if (updates.catalogName !== undefined) updateData.catalog_name = updates.catalogName;
 
+    console.log("Supabase update data:", JSON.stringify(updateData, null, 2));
+    
     const { error } = await supabase
       .from('products')
       .update(updateData)
       .eq('id', productId);
 
     if (error) {
+      console.error("Supabase update error:", error);
       throw error;
     }
+    
+    console.log("Product updated successfully");
   } catch (error) {
     console.error("Error updating product:", error);
     throw error;

@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Database,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -100,6 +101,7 @@ export default function AdminLayout({
     { href: "/admin/inventory", label: "Inventory", icon: Box },
     { href: "/admin/prices", label: "Prices", icon: DollarSign },
     { href: "/admin/categories", label: "Categories", icon: Tag },
+    { href: "/admin/migrate", label: "Migration", icon: Database },
   ];
 
 

@@ -135,17 +135,35 @@ export default function ProductForm({
       const trimmedCategory = formData.category.trim();
       const trimmedSubcategory = formData.subcategory.trim();
 
+      // Validate that at least one image is provided
+      const primaryImage = formData.images[0] || formData.image;
+      if (!primaryImage || primaryImage.trim() === "") {
+        toast.error("Please upload at least one product image");
+        setLoading(false);
+        return;
+      }
+
+      // Ensure price is always a valid number
+      const priceValue = formData.price ? Number(formData.price) : 0;
+      if (isNaN(priceValue) || priceValue < 0) {
+        toast.error("Please enter a valid price");
+        setLoading(false);
+        return;
+      }
+
       const submitData = {
         ...formData,
         category: trimmedCategory,
         subcategory: trimmedSubcategory || undefined,
-        price: Number(formData.price),
+        price: priceValue,
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
         stock: formData.stock ? Number(formData.stock) : undefined,
-        image: formData.images[0] || formData.image,
+        image: primaryImage,
         images: formData.images.length > 0 ? formData.images : (formData.image ? [formData.image] : []),
       };
+
+      console.log("Submitting product data:", submitData);
 
       await onSubmit(submitData);
     } catch (error) {

@@ -13,15 +13,18 @@ interface PageParams {
 export default async function SubcategoryProductsPage({
   params,
 }: {
-  params: PageParams;
+  params: Promise<PageParams>;
 }) {
+  // Await params in Next.js 16+
+  const resolvedParams = await params;
+  
   // Defensive check for params
-  if (!params?.category || !params?.subcategory) {
+  if (!resolvedParams?.category || !resolvedParams?.subcategory) {
     notFound();
   }
 
-  const categoryName = getCategoryNameFromSlug(params.category);
-  const subcategoryName = getSubcategoryNameFromSlug(params.subcategory);
+  const categoryName = getCategoryNameFromSlug(resolvedParams.category);
+  const subcategoryName = getSubcategoryNameFromSlug(resolvedParams.subcategory);
 
   if (!categoryName || !subcategoryName) {
     notFound();

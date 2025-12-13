@@ -45,9 +45,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!name || !description || !price || !image || !category) {
+    const missingFields: string[] = [];
+    if (!name || name.trim() === "") missingFields.push("name");
+    if (!description || description.trim() === "") missingFields.push("description");
+    if (!price || price === "" || isNaN(Number(price))) missingFields.push("price");
+    if (!image || image.trim() === "") missingFields.push("image");
+    if (!category || category.trim() === "") missingFields.push("category");
+    
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
         { status: 400 }
       );
     }

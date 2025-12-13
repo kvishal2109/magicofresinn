@@ -16,7 +16,9 @@ export default function NewProductPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Create failed");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Failed to create product (${response.status})`;
+        throw new Error(errorMessage);
       }
 
       toast.success("Product created successfully");

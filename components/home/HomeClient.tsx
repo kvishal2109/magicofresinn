@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Product } from "@/types";
 import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, Facebook, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { subcategories } from "@/lib/data/subcategories";
+import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
+import { SUBCATEGORY_NAME_TO_SLUG } from "@/lib/data/categoryMaps";
 
 const categoryIcons: { [key: string]: any } = {
   "Home Decor": HomeIcon,
@@ -63,6 +64,25 @@ interface HomeClientProps {
 export default function HomeClient({ initialProducts, initialCategories }: HomeClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>(initialCategories);
+  
+  // Debug: Log products on mount to verify data
+  useEffect(() => {
+    console.log("Total products loaded:", products.length);
+    console.log("Products by category:", 
+      products.reduce((acc, p) => {
+        acc[p.category] = (acc[p.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    );
+    const weddingProducts = products.filter(p => p.category === "Wedding");
+    if (weddingProducts.length > 0) {
+      console.log("Wedding products sample:", weddingProducts.slice(0, 3).map(p => ({
+        name: p.name,
+        category: p.category,
+        subcategory: p.subcategory
+      })));
+    }
+  }, [products]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [lastSubcategoryMeta, setLastSubcategoryMeta] = useState<{ slug: string; categorySlug: string } | null>(null);
@@ -106,8 +126,60 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
     });
   };
 
+  // Extract subcategories dynamically from products
+  const productSubcategories = useMemo(() => {
+    const subcategoryMap = new Map<string, Set<string>>();
+    
+    products.forEach((product) => {
+      if (product.category && product.subcategory) {
+        if (!subcategoryMap.has(product.category)) {
+          subcategoryMap.set(product.category, new Set());
+        }
+        subcategoryMap.get(product.category)?.add(product.subcategory);
+      }
+    });
+
+    const result: Record<string, Array<{ name: string; slug: string; image?: string; productCount: number }>> = {};
+    
+    subcategoryMap.forEach((subcategorySet, category) => {
+      const subcategoryList = Array.from(subcategorySet).map((subName) => {
+        // Get slug from mapping or generate from name
+        const slug = SUBCATEGORY_NAME_TO_SLUG[subName] || subName.toLowerCase().replace(/\s+/g, "-");
+        
+        // Try to get image from static subcategories
+        const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
+        const staticSub = staticSubs.find((s) => s.name === subName || s.slug === slug);
+        
+        // Count products in this subcategory (try exact, then case-insensitive match)
+        let productCount = products.filter(
+          (p) => p.category === category && p.subcategory === subName
+        ).length;
+        
+        // If no exact match, try case-insensitive
+        if (productCount === 0) {
+          productCount = products.filter(
+            (p) => p.category === category && 
+                   p.subcategory && 
+                   p.subcategory.toLowerCase().trim() === subName.toLowerCase().trim()
+          ).length;
+        }
+
+        return {
+          name: subName,
+          slug,
+          image: staticSub?.image,
+          productCount,
+        };
+      });
+      
+      result[category] = subcategoryList.sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    return result;
+  }, [products]);
+
   const getSubcategoryName = (categoryName: string, slug: string) => {
-    const categorySubcategories = subcategories[categoryName as keyof typeof subcategories] || [];
+    const categorySubcategories = staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
     return (
       categorySubcategories.find((sub) => sub.slug === slug)?.name ||
       slug.replace(/-/g, " ")
@@ -347,6 +419,7 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
             src="/background/bg.png"
             alt="Floral Background"
             fill
+            sizes="100vw"
             className="object-cover"
             priority
             quality={90}
@@ -702,62 +775,258 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
               const Icon = categoryIcons[category] || HomeIcon;
               const colorClass = categoryColors[category] || "from-purple-500 to-pink-500";
               const slug = categorySlugs[category] || category.toLowerCase().replace(" ", "-");
-              const categorySubcategories = subcategories[category as keyof typeof subcategories] || [];
+              // Use dynamic subcategories from products, fallback to static
+              const dynamicSubcategories = productSubcategories[category] || [];
+              const staticSubcategoriesList = staticSubcategories[category as keyof typeof staticSubcategories] || [];
+              const categorySubcategories = dynamicSubcategories.length > 0 
+                ? dynamicSubcategories.map((sub) => ({
+                    name: sub.name,
+                    slug: sub.slug,
+                    image: sub.image || staticSubcategoriesList.find((s) => s.name === sub.name)?.image,
+                  }))
+                : staticSubcategoriesList;
+              const isSelected = selectedCategory === category;
 
               return (
                 <div
                   key={category}
-                  className="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
-                  onClick={() => handleCategoryToggle(category)}
+                  className={isSelected ? "md:col-span-2 lg:col-span-4 space-y-0" : ""}
                 >
-                  {/* Background Gradient */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-90`}></div>
-                  
-                  {/* Decorative Pattern */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-2xl"></div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="relative z-10 p-6 min-h-[300px] flex flex-col">
-                    {/* Icon */}
-                    <div className="mb-4">
-                      <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Icon className="w-8 h-8 text-white" />
-                      </div>
+                  {/* Category Card */}
+                  <div
+                    className={`group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform cursor-pointer ${
+                      isSelected ? 'hover:scale-100' : 'hover:scale-105'
+                    }`}
+                    onClick={() => handleCategoryToggle(category)}
+                  >
+                    {/* Background Gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-90`}></div>
+                    
+                    {/* Decorative Pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl"></div>
+                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-2xl"></div>
                     </div>
 
-                    {/* Category Name */}
-                    <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
-                      {category}
-                    </h3>
-
-                    {/* Subcategory Count */}
-                    <p className="text-white/80 text-sm mb-4">
-                      {categorySubcategories.length} subcategories
-                    </p>
-
-                    {/* Preview Image */}
-                    {categorySubcategories.length > 0 && (
-                      <div className="mt-auto relative h-32 rounded-xl overflow-hidden border-2 border-white/30 shadow-lg">
-                        <Image
-                          src={categorySubcategories[0].image}
-                          alt={categorySubcategories[0].name}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
+                    {/* Content */}
+                    <div className="relative z-10 p-6 min-h-[300px] flex flex-col">
+                      {/* Icon */}
+                      <div className="mb-4">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Icon className="w-8 h-8 text-white" />
+                        </div>
                       </div>
-                    )}
 
-                    {/* Arrow Indicator */}
-                    <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all">
-                      <ArrowRight className={`w-5 h-5 text-white transform transition-transform ${selectedCategory === category ? 'rotate-90' : ''}`} />
+                      {/* Category Name */}
+                      <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
+                        {category}
+                      </h3>
+
+                      {/* Subcategory Count */}
+                      <p className="text-white/80 text-sm mb-4">
+                        {(() => {
+                          const dynamicCount = productSubcategories[category]?.length || 0;
+                          const staticCount = categorySubcategories.length;
+                          return dynamicCount > 0 ? dynamicCount : staticCount;
+                        })()} subcategories
+                      </p>
+
+                      {/* Preview Image */}
+                      {categorySubcategories.length > 0 && categorySubcategories[0].image && categorySubcategories[0].image.trim() !== "" && (
+                        <div className="mt-auto relative h-32 rounded-xl overflow-hidden border-2 border-white/30 shadow-lg">
+                          <Image
+                            src={categorySubcategories[0].image}
+                            alt={categorySubcategories[0].name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Arrow Indicator */}
+                      <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 transition-all">
+                        <ArrowRight className={`w-5 h-5 text-white transform transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Subcategories Grid - Show directly beneath selected category */}
+                  {isSelected && (
+                    <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                      {(() => {
+                        const selectedSubcategories = productSubcategories[category] || [];
+                        const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
+                        
+                        // Create a map of subcategories from products for quick lookup
+                        const productSubcategoryMap = new Map(
+                          selectedSubcategories.map((sub) => [sub.name, sub])
+                        );
+                        
+                        // Merge: show all static subcategories, but use product data when available
+                        const displaySubcategories = staticSubs.map((staticSub) => {
+                          const productSub = productSubcategoryMap.get(staticSub.name);
+                          if (productSub) {
+                            // Use product subcategory data (has product count)
+                            return {
+                              name: productSub.name,
+                              slug: productSub.slug,
+                              image: productSub.image || staticSub.image,
+                              productCount: productSub.productCount,
+                            };
+                          } else {
+                            // Use static subcategory, but calculate product count
+                            // Try exact match first, then case-insensitive, then slug-based matching
+                            const exactMatch = products.filter(
+                              (p) => p.category === category && p.subcategory === staticSub.name
+                            );
+                            
+                            if (exactMatch.length > 0) {
+                              return {
+                                name: staticSub.name,
+                                slug: staticSub.slug,
+                                image: staticSub.image,
+                                productCount: exactMatch.length,
+                              };
+                            }
+                            
+                            // Try case-insensitive match
+                            const caseInsensitiveMatch = products.filter(
+                              (p) => p.category === category && 
+                                     p.subcategory && 
+                                     p.subcategory.toLowerCase().trim() === staticSub.name.toLowerCase().trim()
+                            );
+                            
+                            if (caseInsensitiveMatch.length > 0) {
+                              console.log(`Found ${caseInsensitiveMatch.length} products for "${staticSub.name}" (case-insensitive match)`);
+                              return {
+                                name: staticSub.name,
+                                slug: staticSub.slug,
+                                image: staticSub.image,
+                                productCount: caseInsensitiveMatch.length,
+                              };
+                            }
+                            
+                            // Try matching by slug (convert product subcategory to slug and compare)
+                            const productSubcategorySlugs = products
+                              .filter((p) => p.category === category && p.subcategory)
+                              .map((p) => {
+                                const slug = SUBCATEGORY_NAME_TO_SLUG[p.subcategory!] || 
+                                           p.subcategory!.toLowerCase().replace(/\s+/g, "-");
+                                return { product: p, slug };
+                              });
+                            
+                            const slugMatch = productSubcategorySlugs.filter(
+                              (item) => item.slug === staticSub.slug
+                            );
+                            
+                            if (slugMatch.length > 0) {
+                              console.log(`Found ${slugMatch.length} products for "${staticSub.name}" (slug match)`);
+                              return {
+                                name: staticSub.name,
+                                slug: staticSub.slug,
+                                image: staticSub.image,
+                                productCount: slugMatch.length,
+                              };
+                            }
+                            
+                            // No match found
+                            return {
+                              name: staticSub.name,
+                              slug: staticSub.slug,
+                              image: staticSub.image,
+                              productCount: 0,
+                            };
+                          }
+                        });
+
+                        if (displaySubcategories.length === 0) {
+                          return (
+                            <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-2xl border border-purple-200">
+                              <p className="text-gray-600">No subcategories found for {category}</p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-5 lg:p-6 -mt-2 relative z-0">
+                            <div className="flex items-center justify-between mb-5 pb-3 border-b border-purple-100">
+                              <h3 className="text-xl md:text-2xl font-bold text-purple-800">
+                                {category} Subcategories
+                              </h3>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  updateCategorySelection(null);
+                                }}
+                                className="text-purple-600 hover:text-purple-800 hover:bg-purple-50 font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm"
+                              >
+                                <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                                <span className="hidden sm:inline">Close</span>
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                              {displaySubcategories.map((subcategory, index) => {
+                                const categorySlug = categorySlugs[category] || normalizeCategorySlug(category);
+                                const subcategorySlug = subcategory.slug;
+                                const subcategoryUrl = `/products/${categorySlug}/${subcategorySlug}`;
+
+                                return (
+                                  <Link
+                                    key={subcategory.slug}
+                                    href={subcategoryUrl}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSubcategoryClick(category, subcategorySlug);
+                                    }}
+                                    className="group relative overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[1.02] bg-white border border-gray-200/50"
+                                    style={{ animationDelay: `${index * 30}ms` }}
+                                  >
+                                    {/* Image */}
+                                    {subcategory.image && subcategory.image.trim() !== "" ? (
+                                      <div className="relative h-40 sm:h-48 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
+                                        <Image
+                                          src={subcategory.image}
+                                          alt={subcategory.name}
+                                          fill
+                                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                      </div>
+                                    ) : (
+                                      <div className="relative h-40 sm:h-48 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                                        <Icon className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400" />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Content */}
+                                    <div className="p-3 sm:p-4">
+                                      <h4 className="font-bold text-sm sm:text-base text-gray-900 mb-1 group-hover:text-purple-700 transition-colors line-clamp-2">
+                                        {subcategory.name}
+                                      </h4>
+                                      <p className="text-xs sm:text-sm text-gray-500">
+                                        {subcategory.productCount || 0} {subcategory.productCount === 1 ? 'product' : 'products'}
+                                      </p>
+                                    </div>
+
+                                    {/* Arrow indicator */}
+                                    <div className="absolute top-3 right-3 w-7 h-7 sm:w-8 sm:h-8 bg-purple-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    </div>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               );
             })}
+            
             {/* --- Customizable Item Card --- */}
             <div
               key="customizable-item"
@@ -1021,6 +1290,7 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
                 src="/background/bg2.png"
                 alt="Floral Background"
                 fill
+                sizes="100vw"
                 className="object-cover"
                 quality={90}
               />
@@ -1189,10 +1459,10 @@ export default function HomeClient({ initialProducts, initialCategories }: HomeC
                         src={testimonialImages[currentReviewIndex]}
                         alt={`Customer Review ${currentReviewIndex + 1}`}
                         fill
+                        sizes="(max-width: 768px) 85vw, 420px"
                         className={`object-cover transition-all duration-300 ease-in-out ${
                           isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
                         }`}
-                        sizes="(max-width: 768px) 85vw, 420px"
                         priority={currentReviewIndex === 0}
                       />
                       

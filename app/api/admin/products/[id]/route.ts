@@ -42,13 +42,35 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    console.log("Update request body:", JSON.stringify(body, null, 2));
+
     const updates: Partial<Omit<Product, "id" | "createdAt">> = {};
     
     if (body.name !== undefined) updates.name = body.name;
     if (body.description !== undefined) updates.description = body.description;
-    if (body.price !== undefined) updates.price = Number(body.price);
-    if (body.originalPrice !== undefined) updates.originalPrice = body.originalPrice ? Number(body.originalPrice) : undefined;
-    if (body.discount !== undefined) updates.discount = body.discount ? Number(body.discount) : undefined;
+    if (body.price !== undefined && body.price !== null && body.price !== "") {
+      const priceNum = Number(body.price);
+      if (!isNaN(priceNum) && priceNum >= 0) {
+        updates.price = priceNum;
+        console.log("Setting price to:", priceNum);
+      } else {
+        console.warn("Invalid price value:", body.price);
+      }
+    } else {
+      console.log("Price not provided or empty");
+    }
+    if (body.originalPrice !== undefined && body.originalPrice !== null && body.originalPrice !== "") {
+      const originalPriceNum = Number(body.originalPrice);
+      if (!isNaN(originalPriceNum) && originalPriceNum >= 0) {
+        updates.originalPrice = originalPriceNum;
+      }
+    }
+    if (body.discount !== undefined && body.discount !== null && body.discount !== "") {
+      const discountNum = Number(body.discount);
+      if (!isNaN(discountNum) && discountNum >= 0) {
+        updates.discount = discountNum;
+      }
+    }
     if (body.image !== undefined) updates.image = body.image;
     if (body.images !== undefined) updates.images = body.images;
     if (body.category !== undefined) updates.category = body.category;
