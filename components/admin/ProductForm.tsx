@@ -132,37 +132,8 @@ export default function ProductForm({
     setLoading(true);
 
     try {
-      // Validate category - check for duplicates (case-insensitive)
       const trimmedCategory = formData.category.trim();
-      if (trimmedCategory) {
-        const categoryExists = categories.some(
-          (cat) => cat.toLowerCase() === trimmedCategory.toLowerCase()
-        );
-        if (categoryExists && !product) {
-          toast.error("Category already exists. Please select from the dropdown.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Validate subcategory - check for duplicates within the same category (case-insensitive)
       const trimmedSubcategory = formData.subcategory.trim();
-      if (trimmedSubcategory && trimmedCategory) {
-        const categoryProducts = products.filter(
-          (p) => p.category.toLowerCase() === trimmedCategory.toLowerCase()
-        );
-        const existingSubcategories = Array.from(
-          new Set(categoryProducts.map((p) => p.subcategory).filter(Boolean))
-        );
-        const subcategoryExists = existingSubcategories.some(
-          (sub) => sub.toLowerCase() === trimmedSubcategory.toLowerCase()
-        );
-        if (subcategoryExists && (!product || product.subcategory?.toLowerCase() !== trimmedSubcategory.toLowerCase())) {
-          toast.error("Subcategory already exists in this category. Please select from the dropdown.");
-          setLoading(false);
-          return;
-        }
-      }
 
       const submitData = {
         ...formData,
