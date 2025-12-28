@@ -1750,12 +1750,12 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                       <span className="text-gray-700 font-serif">Instagram</span>
                     </div>
                     <a 
-                      href={`https://instagram.com/magi.cofresin`}
+                      href={`https://www.instagram.com/magicofresinn?igsh=Z2JnNTlydG1ncWlh&utm_source=qr`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-purple-600 hover:text-purple-800 font-serif transition-colors"
                     >
-                      @magi.cofresin
+                      @magicofresinn
                     </a>
                   </div>
                 </div>
