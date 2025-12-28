@@ -1667,7 +1667,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                 <div className="flex-1">
                   <p className="uppercase text-xs tracking-[0.3em] mb-2 text-purple-200">ABOUT</p>
                   <h2 className="text-3xl font-bold">
-                    {process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"}
+                    magic of resinn
                   </h2>
                   <p className="text-white/90 mt-2">
                     Handcrafted with love, designed for celebrations
