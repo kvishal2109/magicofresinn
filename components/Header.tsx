@@ -10,8 +10,10 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const updateCounts = () => {
       const cart = getCartFromStorage();
       const wishlist = getWishlistFromStorage();
@@ -58,7 +60,7 @@ export default function Header() {
               className="relative p-2.5 text-purple-800 hover:text-purple-900 transition-all duration-300 rounded-full hover:bg-white/50 backdrop-blur-sm group"
             >
               <Heart className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-              {wishlistCount > 0 && (
+              {mounted && wishlistCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg animate-pulse border-2 border-white">
                   {wishlistCount}
                 </span>
@@ -69,7 +71,7 @@ export default function Header() {
               className="relative p-2.5 text-purple-800 hover:text-purple-900 transition-all duration-300 rounded-full hover:bg-white/50 backdrop-blur-sm group"
             >
               <ShoppingCart className="w-6 h-6 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-lg animate-pulse border-2 border-white">
                   {cartCount}
                 </span>
@@ -116,7 +118,7 @@ export default function Header() {
               >
                 <Heart className="w-6 h-6" />
                 <span className="font-semibold">Wishlist</span>
-                {wishlistCount > 0 && (
+                {mounted && wishlistCount > 0 && (
                   <span className="ml-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs rounded-full px-3 py-1 font-bold shadow-lg">
                     {wishlistCount}
                   </span>
@@ -129,7 +131,7 @@ export default function Header() {
               >
                 <ShoppingCart className="w-6 h-6" />
                 <span className="font-semibold">Cart</span>
-                {cartCount > 0 && (
+                {mounted && cartCount > 0 && (
                   <span className="ml-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full px-3 py-1 font-bold shadow-lg">
                     {cartCount}
                   </span>

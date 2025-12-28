@@ -1,12 +1,18 @@
 import { Product } from "@/types";
-import { getSupabaseAdmin } from "./client";
+import { getSupabaseAdmin, isSupabaseConfigured } from "./client";
 import { hardcodedProducts } from "@/lib/data/products";
 
 /**
  * Get all products from Supabase
- * Falls back to hardcoded products if database is empty
+ * Falls back to hardcoded products if database is empty or not configured
  */
 export async function getAllProducts(): Promise<Product[]> {
+  // If Supabase is not configured, use hardcoded products
+  if (!isSupabaseConfigured()) {
+    console.log("Supabase not configured, using hardcoded products");
+    return hardcodedProducts;
+  }
+
   try {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase

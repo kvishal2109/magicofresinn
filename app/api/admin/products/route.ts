@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as SupabaseProducts from "@/lib/supabase/products";
 import { Product } from "@/types";
 
-// Cache products API for 5 minutes
-export const revalidate = 300;
+// Shorter cache for admin - 30 seconds (admin needs fresh data)
 
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);
     if (authError) return authError;
-
+    
     const products = await SupabaseProducts.getAllProducts();
-    return NextResponse.json({ success: true, products });
+    
+    const headers = new Headers();
+    headers.set('Cache-Control', 'no-store, must-revalidate, max-age=0');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+    
+    return NextResponse.json({ success: true, products }, { headers });
   } catch (error: any) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
@@ -76,6 +82,17 @@ export async function POST(request: NextRequest) {
     };
 
     const productId = await SupabaseProducts.createProduct(productData);
+
+    // Revalidate cache to show new product immediately
+    try {
+      revalidatePath("/api/admin/products");
+      revalidatePath("/api/products");
+      revalidatePath("/");
+      revalidatePath("/admin/products");
+      console.log("Cache revalidated after product creation");
+    } catch (error) {
+      console.error("Error revalidating cache:", error);
+    }
 
     return NextResponse.json({ success: true, productId });
   } catch (error: any) {

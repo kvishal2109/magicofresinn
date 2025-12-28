@@ -1,14 +1,29 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ProductTable from "@/components/admin/ProductTable";
 import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 
 export default function ProductsPage() {
+  const router = useRouter();
   const {
     products,
     loading,
     mutate: mutateProducts,
   } = useAdminProducts();
+
+  // Refresh data when page becomes visible (user returns from edit page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        mutateProducts(undefined, { revalidate: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [mutateProducts]);
 
   const handleDelete = async (id: string) => {
     try {

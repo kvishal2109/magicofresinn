@@ -1,10 +1,12 @@
-import useSWR, { SWRConfiguration } from "swr";
+import useSWR, { SWRConfiguration, KeyedMutator } from "swr";
 import { Product } from "@/types";
 
 const fetcher = async (url: string): Promise<Product[]> => {
   const response = await fetch(url, {
-    // Use Next.js cache for 5 minutes
-    next: { revalidate: 300 },
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    },
   });
   const payload = await response.json().catch(() => ({}));
 
@@ -20,19 +22,39 @@ export function useAdminProducts(config?: SWRConfiguration<Product[]>) {
     "/api/admin/products",
     fetcher,
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60_000, // 60 seconds (increased from 30)
-      focusThrottleInterval: 60_000, // Throttle focus revalidation
+      revalidateOnFocus: true, // Enable focus revalidation
+      revalidateOnReconnect: true, // Enable reconnect revalidation
+      dedupingInterval: 0, // No deduplication - always fetch fresh
+      focusThrottleInterval: 0, // No throttling
       ...config,
     }
   );
+
+  // Enhanced mutate function with proper error handling
+  const mutate: KeyedMutator<Product[]> = async (data?, options?) => {
+    if (options && 'revalidate' in options && options.revalidate === false) {
+      return swr.mutate(data, options);
+    }
+    
+    return swr.mutate(
+      async () => {
+        const response = await fetch('/api/admin/products', { cache: 'no-store' });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || "Failed to load products");
+        }
+        const payload = await response.json();
+        return payload.products || [];
+      },
+      { revalidate: true }
+    );
+  };
 
   return {
     products: swr.data || [],
     loading: !swr.data && !swr.error,
     error: swr.error,
-    mutate: swr.mutate,
+    mutate,
   };
 }
 

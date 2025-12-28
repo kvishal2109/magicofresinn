@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Product } from "@/types";
 import ProductForm from "@/components/admin/ProductForm";
+import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 import toast from "react-hot-toast";
 
 export default function EditProductPage() {
@@ -12,6 +13,7 @@ export default function EditProductPage() {
   const productId = params.id as string;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const { mutate: mutateProducts } = useAdminProducts();
 
   useEffect(() => {
     fetchProduct();
@@ -44,7 +46,14 @@ export default function EditProductPage() {
         throw new Error(errorData.error || "Update failed");
       }
 
+      // Invalidate SWR cache to refresh product list with fresh data
+      await mutateProducts(undefined, { revalidate: true });
+      
+      // Force router refresh to clear Next.js cache
+      router.refresh();
+      
       toast.success("Product updated successfully");
+      
       router.push("/admin/products");
     } catch (error: any) {
       console.error("Update error:", error);

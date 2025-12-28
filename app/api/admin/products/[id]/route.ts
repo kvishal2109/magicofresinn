@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as SupabaseProducts from "@/lib/supabase/products";
 import { Product } from "@/types";
@@ -82,7 +83,30 @@ export async function PUT(
 
     await SupabaseProducts.updateProduct(id, updates);
 
-    return NextResponse.json({ success: true });
+    // Revalidate all caches to show updated product immediately
+    try {
+      // Revalidate API routes
+      revalidatePath("/api/admin/products");
+      revalidatePath("/api/products");
+      revalidatePath(`/api/products/${id}`);
+      revalidatePath(`/api/admin/products/${id}`);
+      
+      // Revalidate pages
+      revalidatePath("/");
+      revalidatePath("/admin/products");
+      revalidatePath(`/product/${id}`);
+      revalidatePath(`/admin/products/${id}/edit`);
+      
+      console.log("Cache revalidated for product:", id);
+    } catch (error) {
+      console.error("Error revalidating cache:", error);
+    }
+
+    // Create response headers only when needed
+    const responseHeaders = new Headers();
+    responseHeaders.set('Cache-Control', 'no-store, must-revalidate');
+    
+    return NextResponse.json({ success: true }, { headers: responseHeaders });
   } catch (error: any) {
     console.error("Error updating product:", error);
     return NextResponse.json(
