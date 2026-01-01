@@ -9,7 +9,7 @@ import {
   ShoppingCart,
   Box,
   Tag,
-  DollarSign,
+  IndianRupee,
   LogOut,
   Menu,
   X,
@@ -99,7 +99,7 @@ export default function AdminLayout({
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
     { href: "/admin/inventory", label: "Inventory", icon: Box },
-    { href: "/admin/prices", label: "Prices", icon: DollarSign },
+    { href: "/admin/prices", label: "Prices", icon: IndianRupee },
     { href: "/admin/categories", label: "Categories", icon: Tag },
     { href: "/admin/migrate", label: "Migration", icon: Database },
   ];
