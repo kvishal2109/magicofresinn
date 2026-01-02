@@ -25,16 +25,27 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   
-  const productSizes = getProductSizes(product);
-  const hasSizes = hasProductSizes(product);
+  const [productSizes, setProductSizes] = useState<ProductSize[] | undefined>(undefined);
+  const [hasSizes, setHasSizes] = useState(false);
 
   useEffect(() => {
     setInWishlist(isInWishlist(product.id));
-    // Set default size if product has sizes
-    if (hasSizes && productSizes && productSizes.length > 0) {
-      setSelectedSize(productSizes[0]);
-    }
-  }, [product.id, hasSizes, productSizes]);
+    
+    // Load product sizes asynchronously
+    const loadSizes = async () => {
+      const sizes = await getProductSizes(product);
+      const productHasSizes = await hasProductSizes(product);
+      setProductSizes(sizes);
+      setHasSizes(productHasSizes);
+      
+      // Set default size if product has sizes
+      if (productHasSizes && sizes && sizes.length > 0) {
+        setSelectedSize(sizes[0]);
+      }
+    };
+    
+    loadSizes();
+  }, [product.id]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();

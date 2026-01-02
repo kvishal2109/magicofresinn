@@ -1,4 +1,4 @@
-import { supabase } from "./client";
+import { supabase, isSupabaseConfigured } from "./client";
 import { ProductSize } from "@/types";
 
 export interface SizeConfiguration {
@@ -11,6 +11,11 @@ export interface SizeConfiguration {
 }
 
 export async function getSizeConfigurations(): Promise<Record<string, ProductSize[]>> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.warn("Supabase not configured, returning empty size configurations");
+    return {};
+  }
+
   const { data, error } = await supabase
     .from("size_configurations")
     .select("*")
@@ -42,6 +47,11 @@ export async function getSizeConfigurations(): Promise<Record<string, ProductSiz
 export async function updateSizeConfigurations(
   configurations: Record<string, ProductSize[]>
 ): Promise<boolean> {
+  if (!isSupabaseConfigured() || !supabase) {
+    console.warn("Supabase not configured, cannot update size configurations");
+    return false;
+  }
+
   try {
     // Delete all existing configurations
     await supabase.from("size_configurations").delete().neq("id", 0);
