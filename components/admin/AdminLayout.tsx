@@ -101,6 +101,7 @@ export default function AdminLayout({
     { href: "/admin/inventory", label: "Inventory", icon: Box },
     { href: "/admin/prices", label: "Prices", icon: IndianRupee },
     { href: "/admin/categories", label: "Categories", icon: Tag },
+    { href: "/admin/sizes", label: "Size Charts", icon: Tag },
     { href: "/admin/migrate", label: "Migration", icon: Database },
   ];
 

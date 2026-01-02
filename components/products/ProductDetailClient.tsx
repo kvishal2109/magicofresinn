@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Product } from "@/types";
+import { Product, ProductSize } from "@/types";
 import { formatCurrency, calculateDiscount } from "@/lib/utils/format";
 import {
   addToCart,
@@ -9,10 +9,12 @@ import {
   removeFromWishlist,
   isInWishlist,
 } from "@/lib/utils/cart";
+import { getProductSizes, hasProductSizes } from "@/lib/data/productSizes";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { Heart, ShoppingCart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import SizeSelector from "../SizeSelector";
 
 interface ProductDetailClientProps {
   product: Product;
@@ -21,14 +23,28 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [inWishlist, setInWishlist] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
+  
+  const productSizes = getProductSizes(product);
+  const hasSizes = hasProductSizes(product);
 
   useEffect(() => {
     setInWishlist(isInWishlist(product.id));
-  }, [product.id]);
+    // Set default size if product has sizes
+    if (hasSizes && productSizes && productSizes.length > 0) {
+      setSelectedSize(productSizes[0]);
+    }
+  }, [product.id, hasSizes, productSizes]);
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
-    toast.success(`Added ${quantity} item(s) to cart!`);
+    if (hasSizes && !selectedSize) {
+      toast.error("Please select a size first");
+      return;
+    }
+    
+    addToCart(product, quantity, selectedSize || undefined);
+    const sizeText = selectedSize ? ` (${selectedSize.label})` : "";
+    toast.success(`Added ${quantity} item(s) to cart${sizeText}!`);
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
@@ -47,6 +63,10 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const discount = product.originalPrice
     ? calculateDiscount(product.originalPrice, product.price)
     : 0;
+
+  // Calculate display price based on selected size
+  const displayPrice = selectedSize ? product.price + selectedSize.priceModifier : product.price;
+  const displayOriginalPrice = selectedSize && product.originalPrice ? product.originalPrice + selectedSize.priceModifier : product.originalPrice;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -76,6 +96,11 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full blur-sm opacity-75 -z-10"></div>
             </div>
           )}
+          {hasSizes && (
+            <div className="absolute top-6 right-6 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg z-20">
+              Multiple Sizes Available
+            </div>
+          )}
         </div>
 
         {/* Product Info - No name, just description */}
@@ -86,15 +111,15 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
           <div className="flex flex-wrap items-center gap-4">
             <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
-              {formatCurrency(product.price)}
+              {formatCurrency(displayPrice)}
             </span>
-            {product.originalPrice && (
+            {displayOriginalPrice && (
               <>
                 <span className="text-2xl text-gray-400 line-through font-semibold">
-                  {formatCurrency(product.originalPrice)}
+                  {formatCurrency(displayOriginalPrice)}
                 </span>
                 <span className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-4 py-2 rounded-xl text-sm font-bold border-2 border-amber-300 shadow-md">
-                  💰 Save {formatCurrency(product.originalPrice - product.price)}
+                  💰 Save {formatCurrency(displayOriginalPrice - displayPrice)}
                 </span>
               </>
             )}
@@ -121,6 +146,18 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
               </p>
             )}
           </div>
+
+          {/* Size Selector */}
+          {hasSizes && productSizes && (
+            <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-6 border-2 border-purple-200 shadow-xl">
+              <SizeSelector
+                sizes={productSizes}
+                selectedSize={selectedSize}
+                onSizeSelect={setSelectedSize}
+                basePrice={product.price}
+              />
+            </div>
+          )}
 
           {/* Quantity Selector */}
           {product.inStock && (
@@ -152,7 +189,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           <div className="flex gap-4">
             <button
               onClick={handleAddToCart}
-              disabled={!product.inStock}
+              disabled={!product.inStock || (hasSizes && !selectedSize)}
               className="flex-1 flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white px-8 py-4 rounded-xl hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all font-bold text-lg shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transform duration-300 disabled:hover:scale-100 group"
             >
               <ShoppingCart className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />

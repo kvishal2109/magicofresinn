@@ -36,15 +36,15 @@ export default function CartPage() {
     };
   }, []);
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
-    const updatedCart = updateCartItemQuantity(productId, newQuantity);
+  const handleQuantityChange = (productId: string, newQuantity: number, sizeId?: string) => {
+    const updatedCart = updateCartItemQuantity(productId, newQuantity, sizeId);
     setCart(updatedCart);
     setTotal(getCartTotal(updatedCart));
     window.dispatchEvent(new Event("cartUpdated"));
   };
 
-  const handleRemoveItem = (productId: string) => {
-    const updatedCart = removeFromCart(productId);
+  const handleRemoveItem = (productId: string, sizeId?: string) => {
+    const updatedCart = removeFromCart(productId, sizeId);
     setCart(updatedCart);
     setTotal(getCartTotal(updatedCart));
     toast.success("Item removed from cart");
@@ -89,9 +89,13 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-5">
-          {cart.map((item, index) => (
+          {cart.map((item, index) => {
+            const itemPrice = item.product.price + (item.selectedSize?.priceModifier || 0);
+            const itemTotal = itemPrice * item.quantity;
+            
+            return (
             <div
-              key={item.productId}
+              key={`${item.productId}-${item.selectedSize?.id || 'no-size'}`}
               className="group bg-white rounded-2xl shadow-xl p-6 flex flex-col sm:flex-row gap-6 border-2 border-purple-100 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] transform"
               style={{ animationDelay: `${index * 100}ms` }}
             >
@@ -115,8 +119,23 @@ export default function CartPage() {
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">
                   {item.product.description}
                 </p>
+                
+                {/* Size Information */}
+                {item.selectedSize && (
+                  <div className="mb-3">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                      Size: {item.selectedSize.label} ({item.selectedSize.dimensions})
+                    </span>
+                    {item.selectedSize.priceModifier > 0 && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        +{formatCurrency(item.selectedSize.priceModifier)}
+                      </span>
+                    )}
+                  </div>
+                )}
+                
                 <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                  {formatCurrency(item.product.price)}
+                  {formatCurrency(itemPrice)}
                 </p>
 
                 {/* Quantity Controls */}
@@ -124,7 +143,7 @@ export default function CartPage() {
                   <div className="flex items-center gap-1 border-2 border-purple-200 rounded-xl overflow-hidden bg-white shadow-md">
                     <button
                       onClick={() =>
-                        handleQuantityChange(item.productId, item.quantity - 1)
+                        handleQuantityChange(item.productId, item.quantity - 1, item.selectedSize?.id)
                       }
                       className="p-2.5 hover:bg-purple-50 transition-colors text-purple-700 hover:text-purple-900"
                       aria-label="Decrease quantity"
@@ -136,7 +155,7 @@ export default function CartPage() {
                     </span>
                     <button
                       onClick={() =>
-                        handleQuantityChange(item.productId, item.quantity + 1)
+                        handleQuantityChange(item.productId, item.quantity + 1, item.selectedSize?.id)
                       }
                       className="p-2.5 hover:bg-purple-50 transition-colors text-purple-700 hover:text-purple-900"
                       aria-label="Increase quantity"
@@ -146,7 +165,7 @@ export default function CartPage() {
                   </div>
 
                   <button
-                    onClick={() => handleRemoveItem(item.productId)}
+                    onClick={() => handleRemoveItem(item.productId, item.selectedSize?.id)}
                     className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-all hover:scale-110 shadow-md hover:shadow-lg border-2 border-red-200 hover:border-red-300"
                     aria-label="Remove item"
                   >
@@ -159,11 +178,12 @@ export default function CartPage() {
               <div className="text-right sm:text-left sm:mt-0 mt-4">
                 <p className="text-sm text-gray-500 mb-1">Total</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {formatCurrency(item.product.price * item.quantity)}
+                  {formatCurrency(itemTotal)}
                 </p>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Order Summary */}

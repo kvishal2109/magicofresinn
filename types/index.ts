@@ -1,3 +1,11 @@
+// Size option for products
+export interface ProductSize {
+  id: string;
+  label: string; // S, M, L, XL
+  dimensions: string; // e.g., "20x15 cm"
+  priceModifier: number; // Additional price for this size (0 for base price)
+}
+
 // Product Types
 export interface Product {
   id: string;
@@ -16,6 +24,7 @@ export interface Product {
   catalogName?: string;
   pdfPage?: number;
   pdfItemRef?: string;
+  sizes?: ProductSize[]; // Available sizes for this product
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +48,7 @@ export interface CartItem {
   productId: string;
   product: Product;
   quantity: number;
+  selectedSize?: ProductSize; // Selected size for this cart item
 }
 
 // Order Types

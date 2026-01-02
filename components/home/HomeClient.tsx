@@ -1089,7 +1089,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                     setSendingWA(true);
                     const waMsg = `Hi, I want to order a custom item.\nMessage: ${customNote}\nName: ${customName}\nContact: ${customNumber}`;
                     const waMsgEncoded = encodeURIComponent(waMsg);
-                    const waURL = `https://wa.me/917355413604?text=${waMsgEncoded}`;
+                    const waURL = `https://wa.me/917209732310?text=${waMsgEncoded}`;
                     window.open(waURL, '_blank');
                     setSendingWA(false);
                     setShowCustomModal(false);

@@ -18,6 +18,19 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Size configurations table
+CREATE TABLE IF NOT EXISTS size_configurations (
+  id SERIAL PRIMARY KEY,
+  category_name TEXT NOT NULL,
+  size_id TEXT NOT NULL,
+  size_label TEXT NOT NULL,
+  dimensions TEXT NOT NULL,
+  price_modifier DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(category_name, size_id)
+);
+
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,

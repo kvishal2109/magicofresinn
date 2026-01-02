@@ -1,4 +1,4 @@
-import { CartItem, Product } from "@/types";
+import { CartItem, Product, ProductSize } from "@/types";
 
 const CART_STORAGE_KEY = "ecommerce_cart";
 const WISHLIST_STORAGE_KEY = "ecommerce_wishlist";
@@ -28,10 +28,17 @@ export function saveCartToStorage(cart: CartItem[]): void {
   }
 }
 
-export function addToCart(product: Product, quantity: number = 1): CartItem[] {
+export function addToCart(product: Product, quantity: number = 1, selectedSize?: ProductSize): CartItem[] {
   const cart = getCartFromStorage();
+  
+  // Create a unique key for cart items that includes size
+  const cartKey = selectedSize ? `${product.id}-${selectedSize.id}` : product.id;
+  
   const existingItemIndex = cart.findIndex(
-    (item) => item.productId === product.id
+    (item) => {
+      const itemKey = item.selectedSize ? `${item.productId}-${item.selectedSize.id}` : item.productId;
+      return itemKey === cartKey;
+    }
   );
   
   if (existingItemIndex >= 0) {
@@ -41,6 +48,7 @@ export function addToCart(product: Product, quantity: number = 1): CartItem[] {
       productId: product.id,
       product,
       quantity,
+      selectedSize,
     });
   }
   
@@ -48,23 +56,34 @@ export function addToCart(product: Product, quantity: number = 1): CartItem[] {
   return cart;
 }
 
-export function removeFromCart(productId: string): CartItem[] {
+export function removeFromCart(productId: string, sizeId?: string): CartItem[] {
   const cart = getCartFromStorage();
-  const updatedCart = cart.filter((item) => item.productId !== productId);
+  const updatedCart = cart.filter((item) => {
+    if (sizeId) {
+      return !(item.productId === productId && item.selectedSize?.id === sizeId);
+    }
+    return item.productId !== productId;
+  });
   saveCartToStorage(updatedCart);
   return updatedCart;
 }
 
 export function updateCartItemQuantity(
   productId: string,
-  quantity: number
+  quantity: number,
+  sizeId?: string
 ): CartItem[] {
   const cart = getCartFromStorage();
-  const itemIndex = cart.findIndex((item) => item.productId === productId);
+  const itemIndex = cart.findIndex((item) => {
+    if (sizeId) {
+      return item.productId === productId && item.selectedSize?.id === sizeId;
+    }
+    return item.productId === productId;
+  });
   
   if (itemIndex >= 0) {
     if (quantity <= 0) {
-      return removeFromCart(productId);
+      return removeFromCart(productId, sizeId);
     }
     cart[itemIndex].quantity = quantity;
     saveCartToStorage(cart);
@@ -80,7 +99,12 @@ export function clearCart(): void {
 
 export function getCartTotal(cart: CartItem[]): number {
   return cart.reduce(
-    (total, item) => total + item.product.price * item.quantity,
+    (total, item) => {
+      const basePrice = item.product.price;
+      const sizeModifier = item.selectedSize?.priceModifier || 0;
+      const itemPrice = basePrice + sizeModifier;
+      return total + itemPrice * item.quantity;
+    },
     0
   );
 }
