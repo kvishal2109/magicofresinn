@@ -9,7 +9,6 @@ import Image from "next/image";
 import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
 import { SUBCATEGORY_NAME_TO_SLUG } from "@/lib/data/categoryMaps";
 import ProductCard from "@/components/ProductCard";
-import ProductCard from "@/components/ProductCard";
 
 const categoryIcons: { [key: string]: any } = {
   "Home Decor": HomeIcon,
@@ -1143,8 +1142,8 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                   )}
                 </div>
               );
-            ))}
-
+            })}
+            
             {/* Search Results Section */}
             {searchQuery.trim() && filteredProductsBySearch.length > 0 && (
               <div className="md:col-span-2 lg:col-span-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
