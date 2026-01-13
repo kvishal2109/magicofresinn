@@ -139,25 +139,59 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
     });
   }, [searchQuery, products]);
 
-  // Get unique suggestions (limit to 8)
+  // Get search suggestions (Google-style - shows as user types)
   const searchSuggestions = useMemo(() => {
-    if (!searchQuery.trim() || filteredProductsBySearch.length === 0) return [];
+    if (!searchQuery.trim()) return [];
     
-    // Get unique product names, categories, and subcategories
-    const suggestions = new Set<string>();
+    const queryLower = searchQuery.toLowerCase().trim();
+    const queryWords = queryLower.split(/\s+/).filter(word => word.length > 0);
     
-    filteredProductsBySearch.slice(0, 8).forEach(product => {
-      if (product.name) suggestions.add(product.name);
-      if (product.category) suggestions.add(product.category);
-      if (product.subcategory) suggestions.add(product.subcategory);
+    // Collect all possible suggestions from products
+    const allSuggestions = new Set<string>();
+    
+    // Add product names, categories, and subcategories
+    products.forEach(product => {
+      if (product.name) allSuggestions.add(product.name);
+      if (product.category) allSuggestions.add(product.category);
+      if (product.subcategory) allSuggestions.add(product.subcategory);
     });
-
-    return Array.from(suggestions).slice(0, 8);
-  }, [searchQuery, filteredProductsBySearch]);
+    
+    // Filter suggestions that match the query (word-by-word or partial match)
+    const matchingSuggestions = Array.from(allSuggestions).filter(suggestion => {
+      const suggestionLower = suggestion.toLowerCase();
+      
+      // Check if all query words are present in the suggestion
+      if (queryWords.length > 0) {
+        return queryWords.every(word => suggestionLower.includes(word));
+      }
+      
+      // Fallback to simple contains check
+      return suggestionLower.includes(queryLower);
+    });
+    
+    // Sort by relevance (exact matches first, then by length)
+    const sorted = matchingSuggestions.sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      
+      // Exact match gets priority
+      if (aLower === queryLower) return -1;
+      if (bLower === queryLower) return 1;
+      
+      // Starts with query gets priority
+      if (aLower.startsWith(queryLower)) return -1;
+      if (bLower.startsWith(queryLower)) return 1;
+      
+      // Shorter matches first
+      return a.length - b.length;
+    });
+    
+    return sorted.slice(0, 10); // Show up to 10 suggestions like Google
+  }, [searchQuery, products]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setShowSearchSuggestions(value.trim().length > 0);
+    setShowSearchSuggestions(value.trim().length > 0); // Show suggestions as soon as user types
     persistCatalogState({ searchQuery: value });
   };
 
@@ -772,37 +806,57 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => {
-                  if (searchQuery.trim()) {
+                  if (searchQuery.trim() || searchSuggestions.length > 0) {
                     setShowSearchSuggestions(true);
                   }
                 }}
                 className="w-full pl-12 pr-4 py-3.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-white/50 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-2xl text-lg"
               />
               
-              {/* Search Suggestions Dropdown */}
-              {showSearchSuggestions && searchSuggestions.length > 0 && (
+              {/* Search Suggestions Dropdown - Google Style */}
+              {showSearchSuggestions && searchQuery.trim() && (
                 <div
                   ref={searchSuggestionsRef}
-                  className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border-2 border-purple-200/60 max-h-80 overflow-y-auto"
+                  className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto"
                 >
-                  <div className="p-2">
-                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b">
-                      Suggestions ({filteredProductsBySearch.length} result{filteredProductsBySearch.length !== 1 ? 's' : ''})
+                  {searchSuggestions.length > 0 ? (
+                    <div className="py-1">
+                      {searchSuggestions.map((suggestion, index) => {
+                        // Highlight matching text
+                        const suggestionLower = suggestion.toLowerCase();
+                        const queryLower = searchQuery.toLowerCase();
+                        const matchIndex = suggestionLower.indexOf(queryLower);
+                        
+                        return (
+                          <button
+                            key={`${suggestion}-${index}`}
+                            type="button"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors flex items-center gap-3 group"
+                          >
+                            <Search className="w-5 h-5 text-gray-400 group-hover:text-purple-600 flex-shrink-0" />
+                            <span className="text-gray-800 text-sm flex-1">
+                              {matchIndex >= 0 ? (
+                                <>
+                                  {suggestion.substring(0, matchIndex)}
+                                  <span className="font-semibold text-purple-700">
+                                    {suggestion.substring(matchIndex, matchIndex + searchQuery.length)}
+                                  </span>
+                                  {suggestion.substring(matchIndex + searchQuery.length)}
+                                </>
+                              ) : (
+                                suggestion
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                    {searchSuggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="w-full text-left px-4 py-3 hover:bg-purple-50 hover:text-purple-700 transition-colors border-b last:border-b-0"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Search className="w-4 h-4 text-purple-400" />
-                          <span className="font-medium">{suggestion}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      No suggestions found
+                    </div>
+                  )}
                 </div>
               )}
             </form>
