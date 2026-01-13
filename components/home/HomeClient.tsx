@@ -3,11 +3,13 @@
 import { useEffect, useState, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Product } from "@/types";
-import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
+import { Search, Sparkles, Home as HomeIcon, Sofa, Heart, Gem, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, ChevronLeft, ChevronRight, Wand2, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
 import { SUBCATEGORY_NAME_TO_SLUG } from "@/lib/data/categoryMaps";
+import ProductCard from "@/components/ProductCard";
+import ProductCard from "@/components/ProductCard";
 
 const categoryIcons: { [key: string]: any } = {
   "Home Decor": HomeIcon,
@@ -85,6 +87,9 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
   }, [products]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchSuggestionsRef = useRef<HTMLDivElement>(null);
   const [lastSubcategoryMeta, setLastSubcategoryMeta] = useState<{ slug: string; categorySlug: string } | null>(null);
   const [testimonialImages, setTestimonialImages] = useState<string[]>([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
@@ -112,10 +117,90 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
     sessionStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(catalogStateRef.current));
   };
 
+  // Filter products based on search query (word-by-word matching)
+  const filteredProductsBySearch = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    
+    const queryWords = searchQuery.toLowerCase().trim().split(/\s+/).filter(word => word.length > 0);
+    if (queryWords.length === 0) return [];
+
+    return products.filter(product => {
+      const searchableText = [
+        product.name,
+        product.description,
+        product.category,
+        product.subcategory,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      // Check if all words in the query match (word-by-word)
+      return queryWords.every(word => searchableText.includes(word));
+    });
+  }, [searchQuery, products]);
+
+  // Get unique suggestions (limit to 8)
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery.trim() || filteredProductsBySearch.length === 0) return [];
+    
+    // Get unique product names, categories, and subcategories
+    const suggestions = new Set<string>();
+    
+    filteredProductsBySearch.slice(0, 8).forEach(product => {
+      if (product.name) suggestions.add(product.name);
+      if (product.category) suggestions.add(product.category);
+      if (product.subcategory) suggestions.add(product.subcategory);
+    });
+
+    return Array.from(suggestions).slice(0, 8);
+  }, [searchQuery, filteredProductsBySearch]);
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+    setShowSearchSuggestions(value.trim().length > 0);
     persistCatalogState({ searchQuery: value });
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSearchSuggestions(false);
+    persistCatalogState({ searchQuery: suggestion });
+    // Scroll to search results
+    if (catalogSectionRef.current) {
+      catalogSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowSearchSuggestions(false);
+    if (searchQuery.trim() && catalogSectionRef.current) {
+      catalogSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchSuggestionsRef.current &&
+        !searchSuggestionsRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchSuggestions(false);
+      }
+    };
+
+    if (showSearchSuggestions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSearchSuggestions]);
 
   const handleSubcategoryClick = (categoryName: string, subcategorySlug: string) => {
     const categorySlug = categorySlugs[categoryName] || normalizeCategorySlug(categoryName);
@@ -679,16 +764,49 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
 
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-600 w-6 h-6" />
-            <input
-              type="text"
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-600 w-6 h-6 z-10" />
+              <input
+                ref={searchInputRef}
+                type="text"
                 placeholder="Search for products..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (searchQuery.trim()) {
+                    setShowSearchSuggestions(true);
+                  }
+                }}
                 className="w-full pl-12 pr-4 py-3.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-white/50 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-2xl text-lg"
-            />
-            </div>
+              />
+              
+              {/* Search Suggestions Dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div
+                  ref={searchSuggestionsRef}
+                  className="absolute z-50 w-full mt-2 bg-white rounded-xl shadow-2xl border-2 border-purple-200/60 max-h-80 overflow-y-auto"
+                >
+                  <div className="p-2">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 border-b">
+                      Suggestions ({filteredProductsBySearch.length} result{filteredProductsBySearch.length !== 1 ? 's' : ''})
+                    </div>
+                    {searchSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="w-full text-left px-4 py-3 hover:bg-purple-50 hover:text-purple-700 transition-colors border-b last:border-b-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-purple-400" />
+                          <span className="font-medium">{suggestion}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       </section>
@@ -1025,7 +1143,68 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                   )}
                 </div>
               );
-            })}
+            ))}
+
+            {/* Search Results Section */}
+            {searchQuery.trim() && filteredProductsBySearch.length > 0 && (
+              <div className="md:col-span-2 lg:col-span-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-5 lg:p-6">
+                  <div className="flex items-center justify-between mb-5 pb-3 border-b border-purple-100">
+                    <h3 className="text-xl md:text-2xl font-bold text-purple-800">
+                      Search Results for "{searchQuery}"
+                      <span className="text-base font-normal text-gray-600 ml-2">
+                        ({filteredProductsBySearch.length} {filteredProductsBySearch.length === 1 ? 'product' : 'products'})
+                      </span>
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setSearchQuery("");
+                        setShowSearchSuggestions(false);
+                        persistCatalogState({ searchQuery: "" });
+                      }}
+                      className="text-purple-600 hover:text-purple-800 hover:bg-purple-50 font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-sm"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredProductsBySearch.map((product, index) => (
+                      <div
+                        key={product.id}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                      >
+                        <ProductCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Search Results Message */}
+            {searchQuery.trim() && filteredProductsBySearch.length === 0 && (
+              <div className="md:col-span-2 lg:col-span-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-8 text-center">
+                  <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">No products found</h3>
+                  <p className="text-gray-600 mb-4">
+                    No products match your search for "{searchQuery}"
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSearchSuggestions(false);
+                      persistCatalogState({ searchQuery: "" });
+                    }}
+                    className="text-purple-600 hover:text-purple-800 hover:bg-purple-50 font-medium px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              </div>
+            )}
             
             {/* --- Customizable Item Card --- */}
             <div
