@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Lock } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -73,15 +72,6 @@ export default function AdminLoginPage() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
-
-          <div className="text-center mt-4">
-            <Link
-              href="/admin/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Forgot your password?
-            </Link>
-          </div>
         </form>
       </div>
     </div>
