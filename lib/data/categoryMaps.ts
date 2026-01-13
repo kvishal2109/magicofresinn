@@ -46,7 +46,6 @@ export const SUBCATEGORY_SLUG_TO_NAME: Record<string, string> = {
   "rings": "Rings",
   "bracelets-bangles": "Bracelets & Bangles",
   "anklets": "Anklets",
-  "accessories": "Accessories",
   "floral-jewellery": "Floral Jewellery",
 };
 
