@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrency } from "@/lib/utils/format";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
-import { QrCode, Copy, CheckCircle2, AlertCircle } from "lucide-react";
+import { QrCode, Copy, CheckCircle2 } from "lucide-react";
 
 function PaymentPageContent() {
   const router = useRouter();
@@ -136,22 +136,6 @@ function PaymentPageContent() {
                     </>
                   )}
                 </button>
-              </div>
-            </div>
-
-            {/* Important Instructions */}
-            <div className="mt-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold text-amber-800 mb-1">Important Instructions:</p>
-                  <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
-                    <li>Enter the <strong>exact amount: {formatCurrency(amountNum)}</strong> when making payment</li>
-                    <li>Add Order Number <strong>{orderNumber || "from above"}</strong> in payment note/description</li>
-                    <li>Do NOT pay less or more than the amount shown</li>
-                    <li>Copy the UTR number from your payment receipt</li>
-                  </ul>
-                </div>
               </div>
             </div>
           </div>
