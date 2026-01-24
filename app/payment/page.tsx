@@ -63,33 +63,7 @@ function PaymentPageContent() {
           <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
             Complete Payment
           </h1>
-          <p className="text-gray-600 text-lg">Choose your preferred payment method</p>
-        </div>
-
-        {/* Payment Method Selector */}
-        <div className="mb-8 flex justify-center gap-4">
-          <button
-            onClick={() => setPaymentMethod("qr")}
-            className={`px-6 py-3 rounded-xl font-bold transition-all ${
-              paymentMethod === "qr"
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
-                : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
-            }`}
-          >
-            <QrCode className="w-5 h-5 inline mr-2" />
-            Scan QR Code
-          </button>
-          <button
-            onClick={() => setPaymentMethod("upi")}
-            className={`px-6 py-3 rounded-xl font-bold transition-all ${
-              paymentMethod === "upi"
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
-                : "bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-400"
-            }`}
-          >
-            <Smartphone className="w-5 h-5 inline mr-2" />
-            Pay with UPI App
-          </button>
+          <p className="text-gray-600 text-lg">Scan the QR code to complete your payment</p>
         </div>
 
         <div className="max-w-2xl mx-auto">
