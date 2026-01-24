@@ -135,13 +135,12 @@ export default function Header() {
                         return (
                           <div key={category} className="mb-2">
                             <div className="flex items-center justify-between gap-2">
-                              <Link
-                                href={`/products/${categorySlug}`}
-                                className="flex-1 text-base font-semibold text-purple-700 hover:text-purple-900 transition-colors py-1"
-                                onClick={() => setCategoriesMenuOpen(false)}
+                              <div
+                                className="flex-1 text-base font-semibold text-purple-700 hover:text-purple-900 transition-colors py-1 cursor-pointer"
+                                onClick={() => toggleCategory(category)}
                               >
                                 {category}
-                              </Link>
+                              </div>
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -260,13 +259,12 @@ export default function Header() {
                       return (
                         <div key={category} className="mb-2">
                           <div className="flex items-center justify-between gap-2">
-                            <Link
-                              href={`/products/${categorySlug}`}
-                              className="flex-1 text-sm font-semibold text-purple-700 hover:text-purple-900 py-1.5"
-                              onClick={() => setMobileMenuOpen(false)}
+                            <div
+                              className="flex-1 text-sm font-semibold text-purple-700 hover:text-purple-900 py-1.5 cursor-pointer"
+                              onClick={() => toggleCategory(category)}
                             >
                               {category}
-                            </Link>
+                            </div>
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
