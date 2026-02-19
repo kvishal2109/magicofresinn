@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { QrCode, Copy, CheckCircle2 } from "lucide-react";
+import CouponBanner from "@/components/CouponBanner";
 
 function PaymentPageContent() {
   const router = useRouter();
@@ -59,6 +60,9 @@ function PaymentPageContent() {
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-4">
+          <CouponBanner variant="compact" />
+        </div>
         <div className="mb-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
             Complete Payment

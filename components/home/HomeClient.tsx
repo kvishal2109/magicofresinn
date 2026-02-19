@@ -9,6 +9,7 @@ import Image from "next/image";
 import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
 import { SUBCATEGORY_NAME_TO_SLUG } from "@/lib/data/categoryMaps";
 import ProductCard from "@/components/ProductCard";
+import CouponBanner from "@/components/CouponBanner";
 
 const categoryIcons: { [key: string]: any } = {
   "Home Decor": HomeIcon,
@@ -529,6 +530,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
 
   return (
     <div className="min-h-screen">
+      <CouponBanner variant="banner" />
       {/* Hero Section with Decorative Elements */}
       <section className="relative overflow-hidden bg-gradient-to-br from-purple-200 via-purple-100 to-purple-200 min-h-[48vh] flex items-center justify-center">
         {/* Background Image */}

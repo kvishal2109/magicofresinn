@@ -97,3 +97,17 @@ export function validateCoupon(code: string, totalAmount: number): {
   };
 }
 
+// Get active coupons for display (banners, checkout). When admin panel exists, can be replaced with API fetch.
+export function getActiveCoupons(): Coupon[] {
+  return coupons.filter((c) => c.isActive);
+}
+
+// Human-readable description for a coupon (e.g. "10% off", "₹100 off")
+export function getCouponDescription(coupon: Coupon): string {
+  if (coupon.discountType === "percentage") {
+    const max = coupon.maxDiscount ? ` (max ₹${coupon.maxDiscount})` : "";
+    return `${coupon.discountValue}% off${max}`;
+  }
+  return `₹${coupon.discountValue} off`;
+}
+

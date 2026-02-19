@@ -13,6 +13,7 @@ import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { validateCoupon } from "@/lib/data/coupons";
 import { Tag, X } from "lucide-react";
+import CouponBanner from "@/components/CouponBanner";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -334,9 +335,10 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* Coupon Code Section */}
+            {/* Available coupons + Coupon Code Section */}
             <div className="border-t-2 border-purple-200 pt-4 mb-4">
-              <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              <CouponBanner variant="compact" />
+              <h3 className="text-sm font-bold text-gray-700 mb-3 mt-3 flex items-center gap-2">
                 <Tag className="w-4 h-4 text-purple-600" />
                 Have a coupon code?
               </h3>
