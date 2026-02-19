@@ -15,8 +15,13 @@ export async function GET(request: NextRequest) {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
-    const fromDb = await getCouponsFromSupabase();
-    const list = fromDb.length > 0 ? fromDb : getActiveCoupons();
+    let list = getActiveCoupons(); // fallback: static list from code
+    try {
+      const fromDb = await getCouponsFromSupabase();
+      if (fromDb.length > 0) list = fromDb;
+    } catch (e) {
+      console.warn("Admin GET coupons: Supabase failed, using static list.", e);
+    }
     return NextResponse.json({ success: true, coupons: list });
   } catch (error: any) {
     console.error("Admin GET coupons:", error);

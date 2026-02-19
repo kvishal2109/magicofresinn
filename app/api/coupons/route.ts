@@ -6,15 +6,12 @@ import { getActiveCouponsFromSupabase } from "@/lib/supabase/coupons";
 export const revalidate = 60;
 
 export async function GET() {
+  let list = getActiveCoupons();
   try {
     const fromDb = await getActiveCouponsFromSupabase();
-    const list = fromDb.length > 0 ? fromDb : getActiveCoupons();
-    return NextResponse.json({ success: true, coupons: list });
+    if (fromDb.length > 0) list = fromDb;
   } catch (error) {
-    console.error("Error fetching coupons:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch coupons" },
-      { status: 500 }
-    );
+    console.warn("Coupons: Supabase unreachable (e.g. paused), using static list.", error);
   }
+  return NextResponse.json({ success: true, coupons: list });
 }

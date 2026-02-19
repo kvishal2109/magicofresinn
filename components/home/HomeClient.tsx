@@ -1031,87 +1031,65 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                         const selectedSubcategories = productSubcategories[category] || [];
                         const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
                         
-                        // Create a map of subcategories from products for quick lookup
                         const productSubcategoryMap = new Map(
                           selectedSubcategories.map((sub) => [sub.name, sub])
                         );
                         
-                        // Merge: show all static subcategories, but use product data when available
-                        const displaySubcategories = staticSubs.map((staticSub) => {
-                          const productSub = productSubcategoryMap.get(staticSub.name);
-                          if (productSub) {
-                            // Use product subcategory data (has product count)
-                            return {
-                              name: productSub.name,
-                              slug: productSub.slug,
-                              image: productSub.image || staticSub.image,
-                              productCount: productSub.productCount,
-                            };
-                          } else {
-                            // Use static subcategory, but calculate product count
-                            // Try exact match first, then case-insensitive, then slug-based matching
+                        let displaySubcategories: Array<{ name: string; slug: string; image?: string; productCount: number }>;
+
+                        if (staticSubs.length > 0) {
+                          // Merge static with product data
+                          displaySubcategories = staticSubs.map((staticSub) => {
+                            const productSub = productSubcategoryMap.get(staticSub.name);
+                            if (productSub) {
+                              return {
+                                name: productSub.name,
+                                slug: productSub.slug,
+                                image: productSub.image || staticSub.image,
+                                productCount: productSub.productCount,
+                              };
+                            }
                             const exactMatch = products.filter(
                               (p) => p.category === category && p.subcategory === staticSub.name
                             );
-                            
                             if (exactMatch.length > 0) {
-                              return {
-                                name: staticSub.name,
-                                slug: staticSub.slug,
-                                image: staticSub.image,
-                                productCount: exactMatch.length,
-                              };
+                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: exactMatch.length };
                             }
-                            
-                            // Try case-insensitive match
                             const caseInsensitiveMatch = products.filter(
-                              (p) => p.category === category && 
-                                     p.subcategory && 
-                                     p.subcategory.toLowerCase().trim() === staticSub.name.toLowerCase().trim()
+                              (p) => p.category === category && p.subcategory && p.subcategory.toLowerCase().trim() === staticSub.name.toLowerCase().trim()
                             );
-                            
                             if (caseInsensitiveMatch.length > 0) {
-                              console.log(`Found ${caseInsensitiveMatch.length} products for "${staticSub.name}" (case-insensitive match)`);
-                              return {
-                                name: staticSub.name,
-                                slug: staticSub.slug,
-                                image: staticSub.image,
-                                productCount: caseInsensitiveMatch.length,
-                              };
+                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: caseInsensitiveMatch.length };
                             }
-                            
-                            // Try matching by slug (convert product subcategory to slug and compare)
                             const productSubcategorySlugs = products
                               .filter((p) => p.category === category && p.subcategory)
                               .map((p) => {
-                                const slug = SUBCATEGORY_NAME_TO_SLUG[p.subcategory!] || 
-                                           p.subcategory!.toLowerCase().replace(/\s+/g, "-");
+                                const slug = SUBCATEGORY_NAME_TO_SLUG[p.subcategory!] || p.subcategory!.toLowerCase().replace(/\s+/g, "-");
                                 return { product: p, slug };
                               });
-                            
-                            const slugMatch = productSubcategorySlugs.filter(
-                              (item) => item.slug === staticSub.slug
-                            );
-                            
+                            const slugMatch = productSubcategorySlugs.filter((item) => item.slug === staticSub.slug);
                             if (slugMatch.length > 0) {
-                              console.log(`Found ${slugMatch.length} products for "${staticSub.name}" (slug match)`);
-                              return {
-                                name: staticSub.name,
-                                slug: staticSub.slug,
-                                image: staticSub.image,
-                                productCount: slugMatch.length,
-                              };
+                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: slugMatch.length };
                             }
-                            
-                            // No match found
-                            return {
-                              name: staticSub.name,
-                              slug: staticSub.slug,
-                              image: staticSub.image,
-                              productCount: 0,
-                            };
-                          }
-                        });
+                            return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: 0 };
+                          });
+
+                          // Also add product-based subcategories not in static list
+                          const staticNames = new Set(staticSubs.map((s) => s.name.toLowerCase()));
+                          selectedSubcategories.forEach((ps) => {
+                            if (!staticNames.has(ps.name.toLowerCase())) {
+                              displaySubcategories.push({ name: ps.name, slug: ps.slug, image: ps.image, productCount: ps.productCount });
+                            }
+                          });
+                        } else {
+                          // No static config for this category — use product-based subcategories directly
+                          displaySubcategories = selectedSubcategories.map((ps) => ({
+                            name: ps.name,
+                            slug: ps.slug,
+                            image: ps.image,
+                            productCount: ps.productCount,
+                          }));
+                        }
 
                         if (displaySubcategories.length === 0) {
                           return (

@@ -72,6 +72,21 @@ export default function CategoriesPage() {
       }
     });
 
+    // Also include categories/subcategories from metadata (no products yet)
+    Object.keys(categoriesMetadata.categories).forEach((catName) => {
+      if (!categoryMap.has(catName)) {
+        categoryMap.set(catName, new Set());
+        categoryCounts.set(catName, 0);
+      }
+    });
+    Object.values(categoriesMetadata.subcategories).forEach((sub) => {
+      if (!categoryMap.has(sub.categoryName)) {
+        categoryMap.set(sub.categoryName, new Set());
+        categoryCounts.set(sub.categoryName, 0);
+      }
+      categoryMap.get(sub.categoryName)?.add(sub.subcategoryName);
+    });
+
     const preferredOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
     const ordered = preferredOrder.filter((cat) => categoryMap.has(cat));
     const remaining = Array.from(categoryMap.keys()).filter((cat) => !preferredOrder.includes(cat));
@@ -108,9 +123,11 @@ export default function CategoriesPage() {
 
     const trimmedCategory = newCategory.trim();
     
-    // Check for duplicates in existing products (case-insensitive)
+    // Check for duplicates in existing products or metadata (case-insensitive)
     const categoryExists = products.some(
       (p) => p.category.toLowerCase() === trimmedCategory.toLowerCase()
+    ) || Object.keys(categoriesMetadata.categories).some(
+      (name) => name.toLowerCase() === trimmedCategory.toLowerCase()
     );
     if (categoryExists) {
       toast.error("Category already exists");
@@ -120,60 +137,27 @@ export default function CategoriesPage() {
 
     setCreatingCategory(true);
     
-    // Create a dummy product to establish the category
-    // In a real scenario, you'd want to create an actual product
+    // Save category in metadata only — no dummy product
     try {
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
+      const imageResponse = await fetch("/api/admin/categories/metadata", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `New Product in ${trimmedCategory}`,
-          description: "Temporary product to create category. Please update or delete this product.",
-          price: 0.01,
-          image: "https://via.placeholder.com/400x400?text=Placeholder",
-          category: trimmedCategory,
-          inStock: false,
+          type: "category",
+          categoryName: trimmedCategory,
+          imageUrl: newCategoryImage || null,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!imageResponse.ok) {
+        const errorData = await imageResponse.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create category");
       }
-
-      const result = await response.json();
       
-      // Save category image if provided - optional, don't fail if blob is suspended
-      if (newCategoryImage) {
-        try {
-          const imageResponse = await fetch("/api/admin/categories/metadata", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "category",
-              categoryName: trimmedCategory,
-              imageUrl: newCategoryImage,
-            }),
-          });
-          if (!imageResponse.ok) {
-            console.warn("Could not save category image (blob may be suspended)");
-            toast.error("Category created but image could not be saved. Blob storage may be suspended.");
-          }
-        } catch (err) {
-          console.warn("Error saving category image (non-critical):", err);
-          toast.error("Category created but image could not be saved.");
-        }
-      }
-      
-      toast.success(`Category "${trimmedCategory}" created. Please add a product to this category.`);
+      toast.success(`Category "${trimmedCategory}" created. Add products to this category from the Products page.`);
       setNewCategory("");
       setNewCategoryImage(null);
       
-      // Revalidate to get the actual data from server
-      // This ensures we have the correct state and prevents duplicates
-      await mutate();
-      
-      // Refresh metadata - optional, don't fail if blob is suspended
+      // Refresh metadata
       try {
         const metadataRes = await fetch("/api/admin/categories/metadata");
         if (metadataRes.ok) {
@@ -183,11 +167,11 @@ export default function CategoriesPage() {
           }
         }
       } catch (metadataError) {
-        console.warn("Could not refresh metadata (blob may be suspended)");
+        console.warn("Could not refresh metadata:", metadataError);
       }
     } catch (error) {
       console.error("Error creating category:", error);
-      toast.error("Failed to create category. Please create a product with this category name instead.");
+      toast.error("Failed to create category.");
     } finally {
       setCreatingCategory(false);
     }
@@ -344,15 +328,18 @@ export default function CategoriesPage() {
 
     const trimmedSubcategory = newSubcategory.trim();
     
-    // Check for duplicates in existing products (case-insensitive)
-    // Check within the selected category only (case-insensitive category match)
-    const subcategoryExists = products.some(
+    // Check for duplicates in products or metadata (case-insensitive)
+    const subcategoryExistsInProducts = products.some(
       (p) => 
         p.category.toLowerCase() === selectedCategoryForSubcategory.toLowerCase() &&
         p.subcategory &&
         p.subcategory.toLowerCase() === trimmedSubcategory.toLowerCase()
     );
-    if (subcategoryExists) {
+    const subcategoryExistsInMetadata = Object.values(categoriesMetadata.subcategories).some(
+      (s) => s.categoryName.toLowerCase() === selectedCategoryForSubcategory.toLowerCase() &&
+             s.subcategoryName.toLowerCase() === trimmedSubcategory.toLowerCase()
+    );
+    if (subcategoryExistsInProducts || subcategoryExistsInMetadata) {
       toast.error("Subcategory already exists in this category");
       setNewSubcategory("");
       return;
@@ -360,89 +347,33 @@ export default function CategoriesPage() {
 
     setCreatingSubcategory(true);
     
-    // Find the exact category name from products to ensure case matching
+    // Find the exact category name from products or metadata
     const exactCategoryName = products.find(
       (p) => p.category.toLowerCase() === selectedCategoryForSubcategory.toLowerCase()
     )?.category || selectedCategoryForSubcategory;
     
-    // Create a dummy product to establish the subcategory
+    // Save subcategory in metadata only — no dummy product
     try {
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
+      const imageResponse = await fetch("/api/admin/categories/metadata", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `New Product in ${exactCategoryName} - ${trimmedSubcategory}`,
-          description: "Temporary product to create subcategory. Please update or delete this product.",
-          price: 0.01,
-          image: "https://via.placeholder.com/400x400?text=Placeholder",
-          category: exactCategoryName,
-          subcategory: trimmedSubcategory,
-          inStock: false,
+          type: "subcategory",
+          categoryName: exactCategoryName,
+          subcategoryName: trimmedSubcategory,
+          imageUrl: newSubcategoryImage || null,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!imageResponse.ok) {
+        const errorData = await imageResponse.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create subcategory");
       }
-
-      const result = await response.json();
       
-      // Verify the product was created successfully
-      if (!result.productId) {
-        throw new Error("Product ID not returned from server");
-      }
-      
-      // Revalidate to get the actual data from server
-      // This ensures we have the correct state and prevents duplicates
-      await mutate();
-      
-      // Save subcategory image if provided - optional, don't fail if blob is suspended
-      if (newSubcategoryImage) {
-        try {
-          const imageResponse = await fetch("/api/admin/categories/metadata", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "subcategory",
-              categoryName: exactCategoryName,
-              subcategoryName: trimmedSubcategory,
-              imageUrl: newSubcategoryImage,
-            }),
-          });
-          if (!imageResponse.ok) {
-            console.warn("Could not save subcategory image (blob may be suspended)");
-            toast.error("Subcategory created but image could not be saved. Blob storage may be suspended.");
-          }
-        } catch (err) {
-          console.warn("Error saving subcategory image (non-critical):", err);
-          toast.error("Subcategory created but image could not be saved.");
-        }
-      }
-      
-      // Revalidate to get the actual data from server
-      const updatedProducts = await mutate();
-      
-      // Verify the subcategory was added by checking the updated products (case-insensitive)
-      const subcategoryExists = updatedProducts?.some(
-        (p) => 
-          p.category.toLowerCase() === selectedCategoryForSubcategory.toLowerCase() &&
-          p.subcategory &&
-          p.subcategory.toLowerCase() === trimmedSubcategory.toLowerCase()
-      );
-      
-      if (subcategoryExists) {
-        toast.success(`Subcategory "${trimmedSubcategory}" added to "${selectedCategoryForSubcategory}". Please add a product to this subcategory.`);
-      } else {
-        // Still show success but with a note
-        toast.success(`Subcategory "${trimmedSubcategory}" created. It should appear in the category list shortly.`);
-      }
-      
+      toast.success(`Subcategory "${trimmedSubcategory}" added to "${exactCategoryName}". Add products from the Products page.`);
       setNewSubcategory("");
       setNewSubcategoryImage(null);
-      // Keep the category selected so user can see the subcategory was added
       
-      // Refresh metadata - optional, don't fail if blob is suspended
+      // Refresh metadata
       try {
         const metadataRes = await fetch("/api/admin/categories/metadata");
         if (metadataRes.ok) {
@@ -452,11 +383,11 @@ export default function CategoriesPage() {
           }
         }
       } catch (metadataError) {
-        console.warn("Could not refresh metadata (blob may be suspended)");
+        console.warn("Could not refresh metadata:", metadataError);
       }
     } catch (error: any) {
       console.error("Error creating subcategory:", error);
-      toast.error(error.message || "Failed to create subcategory. Please create a product with this subcategory name instead.");
+      toast.error(error.message || "Failed to create subcategory.");
     } finally {
       setCreatingSubcategory(false);
     }
