@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<import("@/lib/data/coupons").Coupon[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: "",
@@ -46,6 +47,13 @@ export default function CheckoutPage() {
     setTotal(subtotalAmount - discount);
   }, [router, discount]);
 
+  useEffect(() => {
+    fetch("/api/coupons")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d?.coupons && setAvailableCoupons(d.coupons))
+      .catch(() => {});
+  }, []);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -59,7 +67,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const result = validateCoupon(couponCode, subtotal);
+    const result = validateCoupon(couponCode, subtotal, availableCoupons ?? undefined);
     
     if (result.valid && result.discountAmount) {
       setDiscount(result.discountAmount);

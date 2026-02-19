@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Database,
+  Ticket,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -100,6 +101,7 @@ export default function AdminLayout({
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
     { href: "/admin/inventory", label: "Inventory", icon: Box },
     { href: "/admin/prices", label: "Prices", icon: IndianRupee },
+    { href: "/admin/coupons", label: "Coupons", icon: Ticket },
     { href: "/admin/categories", label: "Categories", icon: Tag },
     { href: "/admin/sizes", label: "Size Charts", icon: Tag },
     { href: "/admin/migrate", label: "Migration", icon: Database },

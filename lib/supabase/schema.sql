@@ -71,9 +71,23 @@ CREATE TABLE IF NOT EXISTS admin_auth (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Coupons table (admin-managed discount codes)
+CREATE TABLE IF NOT EXISTS coupons (
+  id TEXT PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage', 'fixed')),
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_purchase DECIMAL(10,2),
+  max_discount DECIMAL(10,2),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(order_status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
 

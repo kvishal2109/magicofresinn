@@ -53,15 +53,20 @@ export const coupons: Coupon[] = [
   },
 ];
 
-// Validate and get coupon
-export function validateCoupon(code: string, totalAmount: number): {
+// Validate and get coupon. Pass optional list (e.g. from API) to validate against admin-created coupons too.
+export function validateCoupon(
+  code: string,
+  totalAmount: number,
+  couponsList?: Coupon[] | null
+): {
   valid: boolean;
   coupon?: Coupon;
   discountAmount?: number;
   error?: string;
 } {
-  const coupon = coupons.find(
-    (c) => c.code.toUpperCase() === code.toUpperCase() && c.isActive
+  const list = couponsList ?? coupons;
+  const coupon = list.find(
+    (c) => c.code.toUpperCase() === code.toUpperCase().trim() && c.isActive
   );
 
   if (!coupon) {
