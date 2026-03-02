@@ -41,6 +41,19 @@ const slugToCategory = Object.entries(categorySlugs).reduce<Record<string, strin
 );
 
 const normalizeCategorySlug = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
+interface CategoriesMetadata {
+  categories: Record<string, { name: string; image?: string }>;
+  subcategories: Record<string, { categoryName: string; subcategoryName: string; image?: string }>;
+}
+
+interface SubcategoryDisplay {
+  name: string;
+  slug: string;
+  image?: string;
+  productCount: number;
+}
 
 type CatalogState = {
   categorySlug: string | null;
@@ -61,11 +74,13 @@ const CATALOG_STORAGE_KEY = "catalogState";
 interface HomeClientProps {
   initialProducts: Product[];
   initialCategories: string[];
+  initialCategoriesMetadata: CategoriesMetadata;
 }
 
-function HomeClientContent({ initialProducts, initialCategories }: HomeClientProps) {
+function HomeClientContent({ initialProducts, initialCategories, initialCategoriesMetadata }: HomeClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [categoriesMetadata, setCategoriesMetadata] = useState<CategoriesMetadata>(initialCategoriesMetadata);
   
   // Debug: Log products on mount to verify data
   useEffect(() => {
@@ -245,6 +260,23 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
     });
   };
 
+  const metadataSubcategoriesByCategory = useMemo(() => {
+    const result: Record<string, Array<{ name: string; image?: string }>> = {};
+
+    Object.values(categoriesMetadata.subcategories || {}).forEach((sub) => {
+      if (!sub.categoryName || !sub.subcategoryName) return;
+      if (!result[sub.categoryName]) {
+        result[sub.categoryName] = [];
+      }
+      result[sub.categoryName].push({
+        name: sub.subcategoryName,
+        image: sub.image,
+      });
+    });
+
+    return result;
+  }, [categoriesMetadata]);
+
   // Extract subcategories dynamically from products
   const productSubcategories = useMemo(() => {
     const subcategoryMap = new Map<string, Set<string>>();
@@ -258,28 +290,24 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
       }
     });
 
-    const result: Record<string, Array<{ name: string; slug: string; image?: string; productCount: number }>> = {};
+    const result: Record<string, SubcategoryDisplay[]> = {};
     
     subcategoryMap.forEach((subcategorySet, category) => {
       const subcategoryList = Array.from(subcategorySet).map((subName) => {
-        // Get slug from mapping or generate from name
-        const slug = SUBCATEGORY_NAME_TO_SLUG[subName] || subName.toLowerCase().replace(/\s+/g, "-");
-        
-        // Try to get image from static subcategories
+        const slug = SUBCATEGORY_NAME_TO_SLUG[subName] || normalizeCategorySlug(subName);
         const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
-        const staticSub = staticSubs.find((s) => s.name === subName || s.slug === slug);
+        const staticSub = staticSubs.find((s) => normalizeText(s.name) === normalizeText(subName) || s.slug === slug);
         
-        // Count products in this subcategory (try exact, then case-insensitive match)
         let productCount = products.filter(
           (p) => p.category === category && p.subcategory === subName
         ).length;
         
-        // If no exact match, try case-insensitive
         if (productCount === 0) {
           productCount = products.filter(
-            (p) => p.category === category && 
-                   p.subcategory && 
-                   p.subcategory.toLowerCase().trim() === subName.toLowerCase().trim()
+            (p) =>
+              p.category === category &&
+              p.subcategory &&
+              normalizeText(p.subcategory) === normalizeText(subName)
           ).length;
         }
 
@@ -297,8 +325,48 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
     return result;
   }, [products]);
 
+  const getCategorySubcategories = (categoryName: string): SubcategoryDisplay[] => {
+    const combined = new Map<string, SubcategoryDisplay>();
+    const staticSubs = staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
+    const metadataSubs = metadataSubcategoriesByCategory[categoryName] || [];
+    const productSubs = productSubcategories[categoryName] || [];
+
+    staticSubs.forEach((sub) => {
+      combined.set(normalizeText(sub.name), {
+        name: sub.name,
+        slug: sub.slug || normalizeCategorySlug(sub.name),
+        image: sub.image,
+        productCount: 0,
+      });
+    });
+
+    metadataSubs.forEach((sub) => {
+      const key = normalizeText(sub.name);
+      const existing = combined.get(key);
+      combined.set(key, {
+        name: existing?.name || sub.name,
+        slug: existing?.slug || SUBCATEGORY_NAME_TO_SLUG[sub.name] || normalizeCategorySlug(sub.name),
+        image: sub.image || existing?.image,
+        productCount: existing?.productCount || 0,
+      });
+    });
+
+    productSubs.forEach((sub) => {
+      const key = normalizeText(sub.name);
+      const existing = combined.get(key);
+      combined.set(key, {
+        name: existing?.name || sub.name,
+        slug: existing?.slug || sub.slug || normalizeCategorySlug(sub.name),
+        image: sub.image || existing?.image,
+        productCount: sub.productCount,
+      });
+    });
+
+    return Array.from(combined.values()).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
   const getSubcategoryName = (categoryName: string, slug: string) => {
-    const categorySubcategories = staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
+    const categorySubcategories = getCategorySubcategories(categoryName);
     return (
       categorySubcategories.find((sub) => sub.slug === slug)?.name ||
       slug.replace(/-/g, " ")
@@ -351,7 +419,10 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
       return;
     }
 
-    const resolvedCategory = slugToCategory[categoryQueryParam] || null;
+    const resolvedCategory =
+      slugToCategory[categoryQueryParam] ||
+      categories.find((category) => normalizeCategorySlug(category) === categoryQueryParam) ||
+      null;
     if (resolvedCategory) {
       setSelectedCategory(resolvedCategory);
       persistCatalogState({ categorySlug: categoryQueryParam });
@@ -362,7 +433,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
         });
       }
     }
-  }, [categoryQueryParam]);
+  }, [categoryQueryParam, categories]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -429,6 +500,10 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
   useEffect(() => {
     setCategories(initialCategories);
   }, [initialCategories]);
+
+  useEffect(() => {
+    setCategoriesMetadata(initialCategoriesMetadata);
+  }, [initialCategoriesMetadata]);
 
   // Load testimonial images - review images from Testimonies folder
   useEffect(() => {
@@ -947,17 +1022,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
             {categories.map((category) => {
               const Icon = categoryIcons[category] || HomeIcon;
               const colorClass = categoryColors[category] || "from-purple-500 to-pink-500";
-              const slug = categorySlugs[category] || category.toLowerCase().replace(" ", "-");
-              // Use dynamic subcategories from products, fallback to static
-              const dynamicSubcategories = productSubcategories[category] || [];
-              const staticSubcategoriesList = staticSubcategories[category as keyof typeof staticSubcategories] || [];
-              const categorySubcategories = dynamicSubcategories.length > 0 
-                ? dynamicSubcategories.map((sub) => ({
-                    name: sub.name,
-                    slug: sub.slug,
-                    image: sub.image || staticSubcategoriesList.find((s) => s.name === sub.name)?.image,
-                  }))
-                : staticSubcategoriesList;
+              const categorySubcategories = getCategorySubcategories(category);
               const isSelected = selectedCategory === category;
 
               return (
@@ -997,11 +1062,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
 
                       {/* Subcategory Count */}
                       <p className="text-white/80 text-sm mb-4">
-                        {(() => {
-                          const dynamicCount = productSubcategories[category]?.length || 0;
-                          const staticCount = categorySubcategories.length;
-                          return dynamicCount > 0 ? dynamicCount : staticCount;
-                        })()} subcategories
+                        {categorySubcategories.length} subcategories
                       </p>
 
                       {/* Preview Image */}
@@ -1028,68 +1089,7 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
                   {isSelected && (
                     <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                       {(() => {
-                        const selectedSubcategories = productSubcategories[category] || [];
-                        const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
-                        
-                        const productSubcategoryMap = new Map(
-                          selectedSubcategories.map((sub) => [sub.name, sub])
-                        );
-                        
-                        let displaySubcategories: Array<{ name: string; slug: string; image?: string; productCount: number }>;
-
-                        if (staticSubs.length > 0) {
-                          // Merge static with product data
-                          displaySubcategories = staticSubs.map((staticSub) => {
-                            const productSub = productSubcategoryMap.get(staticSub.name);
-                            if (productSub) {
-                              return {
-                                name: productSub.name,
-                                slug: productSub.slug,
-                                image: productSub.image || staticSub.image,
-                                productCount: productSub.productCount,
-                              };
-                            }
-                            const exactMatch = products.filter(
-                              (p) => p.category === category && p.subcategory === staticSub.name
-                            );
-                            if (exactMatch.length > 0) {
-                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: exactMatch.length };
-                            }
-                            const caseInsensitiveMatch = products.filter(
-                              (p) => p.category === category && p.subcategory && p.subcategory.toLowerCase().trim() === staticSub.name.toLowerCase().trim()
-                            );
-                            if (caseInsensitiveMatch.length > 0) {
-                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: caseInsensitiveMatch.length };
-                            }
-                            const productSubcategorySlugs = products
-                              .filter((p) => p.category === category && p.subcategory)
-                              .map((p) => {
-                                const slug = SUBCATEGORY_NAME_TO_SLUG[p.subcategory!] || p.subcategory!.toLowerCase().replace(/\s+/g, "-");
-                                return { product: p, slug };
-                              });
-                            const slugMatch = productSubcategorySlugs.filter((item) => item.slug === staticSub.slug);
-                            if (slugMatch.length > 0) {
-                              return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: slugMatch.length };
-                            }
-                            return { name: staticSub.name, slug: staticSub.slug, image: staticSub.image, productCount: 0 };
-                          });
-
-                          // Also add product-based subcategories not in static list
-                          const staticNames = new Set(staticSubs.map((s) => s.name.toLowerCase()));
-                          selectedSubcategories.forEach((ps) => {
-                            if (!staticNames.has(ps.name.toLowerCase())) {
-                              displaySubcategories.push({ name: ps.name, slug: ps.slug, image: ps.image, productCount: ps.productCount });
-                            }
-                          });
-                        } else {
-                          // No static config for this category — use product-based subcategories directly
-                          displaySubcategories = selectedSubcategories.map((ps) => ({
-                            name: ps.name,
-                            slug: ps.slug,
-                            image: ps.image,
-                            productCount: ps.productCount,
-                          }));
-                        }
+                        const displaySubcategories = getCategorySubcategories(category);
 
                         if (displaySubcategories.length === 0) {
                           return (
@@ -2007,10 +2007,14 @@ function HomeClientContent({ initialProducts, initialCategories }: HomeClientPro
   );
 }
 
-export default function HomeClient({ initialProducts, initialCategories }: HomeClientProps) {
+export default function HomeClient({ initialProducts, initialCategories, initialCategoriesMetadata }: HomeClientProps) {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-gray-600">Loading...</div></div>}>
-      <HomeClientContent initialProducts={initialProducts} initialCategories={initialCategories} />
+      <HomeClientContent
+        initialProducts={initialProducts}
+        initialCategories={initialCategories}
+        initialCategoriesMetadata={initialCategoriesMetadata}
+      />
     </Suspense>
   );
 }

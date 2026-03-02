@@ -1,6 +1,7 @@
 import { Product } from "@/types";
 import { getSupabaseAdmin, isSupabaseConfigured } from "./client";
 import { hardcodedProducts } from "@/lib/data/products";
+import { getCategoriesMetadata } from "./categories";
 
 /**
  * Get all products from Supabase
@@ -185,15 +186,28 @@ export async function getAllCategories(): Promise<string[]> {
   const standardCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
   
   try {
-    const products = await getAllProducts();
+    const [products, categoriesMetadata] = await Promise.all([
+      getAllProducts(),
+      getCategoriesMetadata(),
+    ]);
     
     // Get categories from products
     const productCategories = products && products.length > 0 
       ? [...new Set(products.map((p) => p.category).filter(Boolean))]
       : [];
+
+    // Get categories that were created in admin metadata (with or without products)
+    const metadataCategories = [
+      ...Object.keys(categoriesMetadata.categories || {}),
+      ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
+    ].filter(Boolean);
     
     // Combine standard categories with any additional categories from products
-    const allCategories = new Set([...standardCategories, ...productCategories]);
+    const allCategories = new Set([
+      ...standardCategories,
+      ...productCategories,
+      ...metadataCategories,
+    ]);
     
     // Order: standard categories first, then any additional ones
     const orderedCategories = standardCategories.filter(cat => allCategories.has(cat));

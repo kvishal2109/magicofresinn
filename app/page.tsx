@@ -1,19 +1,22 @@
 import HomeClient from "@/components/home/HomeClient";
 import { getAllProducts, getAllCategories } from "@/lib/supabase/products";
+import { getCategoriesMetadata } from "@/lib/supabase/categories";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
   try {
-    const [products, categories] = await Promise.all([
+    const [products, categories, categoriesMetadata] = await Promise.all([
       getAllProducts(),
       getAllCategories(),
+      getCategoriesMetadata(),
     ]);
 
     return (
       <HomeClient
         initialProducts={products}
         initialCategories={categories}
+        initialCategoriesMetadata={categoriesMetadata}
       />
     );
   } catch (error) {
@@ -26,6 +29,7 @@ export default async function HomePage() {
       <HomeClient
         initialProducts={hardcodedProducts}
         initialCategories={fallbackCategories}
+        initialCategoriesMetadata={{ categories: {}, subcategories: {} }}
       />
     );
   }

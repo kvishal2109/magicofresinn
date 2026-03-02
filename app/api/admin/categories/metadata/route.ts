@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as CategoriesStorage from "@/lib/supabase/categories";
 
@@ -47,6 +48,14 @@ export async function PUT(request: NextRequest) {
         { error: "Invalid type. Must be 'category' or 'subcategory'" },
         { status: 400 }
       );
+    }
+    
+    try {
+      revalidatePath("/");
+      revalidatePath("/api/categories");
+      revalidatePath("/products/[category]/[subcategory]", "page");
+    } catch (revalidateError) {
+      console.error("Error revalidating category pages:", revalidateError);
     }
 
     return NextResponse.json({ success: true });
