@@ -12,6 +12,13 @@ interface ProductFormProps {
   onCancel?: () => void;
 }
 
+interface CategoriesMetadata {
+  categories: Record<string, { name: string; image?: string }>;
+  subcategories: Record<string, { categoryName: string; subcategoryName: string; image?: string }>;
+}
+
+const normalize = (value: string) => value.trim().toLowerCase();
+
 export default function ProductForm({
   product,
   onSubmit,
@@ -36,33 +43,88 @@ export default function ProductForm({
   const [showCustomSubcategory, setShowCustomSubcategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
   const [customSubcategoryInput, setCustomSubcategoryInput] = useState("");
+  const [categoriesMetadata, setCategoriesMetadata] = useState<CategoriesMetadata>({
+    categories: {},
+    subcategories: {},
+  });
+
+  // Load admin categories metadata so empty categories/subcategories are available in the product form
+  useEffect(() => {
+    fetch("/api/admin/categories/metadata")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data.metadata) {
+          setCategoriesMetadata(data.metadata);
+        }
+      })
+      .catch((error) => {
+        console.warn("Could not fetch categories metadata for product form:", error);
+      });
+  }, []);
 
   // Extract unique categories
   const categories = useMemo(() => {
-    const unique = Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
-    // If editing and current category is not in list, add it
-    if (product?.category && !unique.includes(product.category)) {
-      unique.push(product.category);
-    }
+    const categoryMap = new Map<string, string>();
+    const addCategory = (name?: string | null) => {
+      if (!name) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const key = normalize(trimmed);
+      if (!categoryMap.has(key)) {
+        categoryMap.set(key, trimmed);
+      }
+    };
+
+    products.forEach((p) => addCategory(p.category));
+    Object.keys(categoriesMetadata.categories || {}).forEach((cat) => addCategory(cat));
+    Object.values(categoriesMetadata.subcategories || {}).forEach((sub) =>
+      addCategory(sub.categoryName)
+    );
+    if (product?.category) addCategory(product.category);
+
+    const unique = Array.from(categoryMap.values());
     const preferredOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-    const ordered = preferredOrder.filter((cat) => unique.includes(cat));
-    const remaining = unique.filter((cat) => !preferredOrder.includes(cat));
+    const ordered = preferredOrder.filter((cat) =>
+      unique.some((item) => normalize(item) === normalize(cat))
+    );
+    const remaining = unique.filter(
+      (cat) => !preferredOrder.some((preferred) => normalize(preferred) === normalize(cat))
+    );
     return [...ordered, ...remaining];
-  }, [products, product]);
+  }, [products, product, categoriesMetadata]);
 
   // Extract subcategories for selected category
   const subcategories = useMemo(() => {
     if (!formData.category) return [];
-    const categoryProducts = products.filter((p) => p.category === formData.category);
-    const unique = Array.from(
-      new Set(categoryProducts.map((p) => p.subcategory).filter(Boolean))
-    );
-    // If editing and current subcategory is not in list, add it
-    if (product?.subcategory && product.category === formData.category && !unique.includes(product.subcategory)) {
-      unique.push(product.subcategory);
+    const subcategoryMap = new Map<string, string>();
+    const addSubcategory = (name?: string | null) => {
+      if (!name) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const key = normalize(trimmed);
+      if (!subcategoryMap.has(key)) {
+        subcategoryMap.set(key, trimmed);
+      }
+    };
+
+    products
+      .filter((p) => normalize(p.category) === normalize(formData.category))
+      .forEach((p) => addSubcategory(p.subcategory));
+
+    Object.values(categoriesMetadata.subcategories || {})
+      .filter((sub) => normalize(sub.categoryName) === normalize(formData.category))
+      .forEach((sub) => addSubcategory(sub.subcategoryName));
+
+    if (
+      product?.subcategory &&
+      product.category &&
+      normalize(product.category) === normalize(formData.category)
+    ) {
+      addSubcategory(product.subcategory);
     }
-    return unique.sort();
-  }, [products, formData.category, product]);
+
+    return Array.from(subcategoryMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [products, formData.category, product, categoriesMetadata]);
 
   useEffect(() => {
     if (product) {
