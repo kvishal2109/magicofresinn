@@ -264,25 +264,6 @@ export default function CategoriesPage() {
         throw new Error(errorData.error || `Failed to delete category: ${response.statusText}`);
       }
 
-      // Also delete category metadata (image) - optional, don't fail if blob is suspended
-      try {
-        const metadataResponse = await fetch("/api/admin/categories/metadata", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "category",
-            categoryName: category,
-            imageUrl: null,
-          }),
-        });
-        if (!metadataResponse.ok) {
-          console.warn("Could not delete category metadata (blob may be suspended)");
-        }
-      } catch (metadataError) {
-        console.warn("Error deleting category metadata (non-critical):", metadataError);
-        // Don't fail the whole operation if metadata deletion fails
-      }
-
       toast.success(`Category "${category}" and all its products have been deleted`);
       setDeletingCategory(null);
       setCategoryToDelete(null);

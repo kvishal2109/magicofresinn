@@ -68,3 +68,55 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const authError = await requireAuth(request);
+    if (authError) return authError;
+
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type");
+    const categoryName = searchParams.get("categoryName");
+    const subcategoryName = searchParams.get("subcategoryName");
+
+    if (!type || !categoryName) {
+      return NextResponse.json(
+        { error: "type and categoryName are required" },
+        { status: 400 }
+      );
+    }
+
+    if (type === "category") {
+      await CategoriesStorage.deleteCategoryMetadata(categoryName);
+    } else if (type === "subcategory") {
+      if (!subcategoryName) {
+        return NextResponse.json(
+          { error: "subcategoryName is required for subcategory delete" },
+          { status: 400 }
+        );
+      }
+      await CategoriesStorage.deleteSubcategoryMetadata(categoryName, subcategoryName);
+    } else {
+      return NextResponse.json(
+        { error: "Invalid type. Must be 'category' or 'subcategory'" },
+        { status: 400 }
+      );
+    }
+
+    try {
+      revalidatePath("/");
+      revalidatePath("/api/categories");
+      revalidatePath("/products/[category]/[subcategory]", "page");
+    } catch (revalidateError) {
+      console.error("Error revalidating category pages:", revalidateError);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting categories metadata:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to delete categories metadata" },
+      { status: 500 }
+    );
+  }
+}
+

@@ -170,3 +170,43 @@ export async function updateSubcategoryImage(
   }
 }
 
+/**
+ * Delete category metadata including all subcategory metadata rows
+ */
+export async function deleteCategoryMetadata(categoryName: string): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("categories_metadata")
+      .delete()
+      .eq("category_name", categoryName);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error deleting category metadata:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a specific subcategory metadata row
+ */
+export async function deleteSubcategoryMetadata(
+  categoryName: string,
+  subcategoryName: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("categories_metadata")
+      .delete()
+      .eq("category_name", categoryName)
+      .eq("subcategory_name", subcategoryName);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error deleting subcategory metadata:", error);
+    throw error;
+  }
+}
+

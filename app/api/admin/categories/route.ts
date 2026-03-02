@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as SupabaseProducts from "@/lib/supabase/products";
+import * as CategoriesStorage from "@/lib/supabase/categories";
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,7 +68,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await SupabaseProducts.deleteCategory(category);
+    await Promise.all([
+      SupabaseProducts.deleteCategory(category),
+      CategoriesStorage.deleteCategoryMetadata(category),
+    ]);
+
+    try {
+      revalidatePath("/");
+      revalidatePath("/api/categories");
+      revalidatePath("/products/[category]/[subcategory]", "page");
+    } catch (revalidateError) {
+      console.error("Error revalidating category pages:", revalidateError);
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error deleting category:", error);
