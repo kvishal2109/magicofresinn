@@ -15,6 +15,54 @@ type ProductGroup = {
   }>;
 };
 
+const DIMENSION_UNITS = ["cm", "inch", "m"] as const;
+
+const parseDimensionParts = (dimensions: string) => {
+  const trimmed = dimensions.trim();
+
+  if (!trimmed) {
+    return { length: "", width: "", unit: "cm" };
+  }
+
+  const rangeMatch = trimmed.match(
+    /^(\d+(?:\.\d+)?)\s*(?:x|X)\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?$/
+  );
+
+  if (rangeMatch) {
+    return {
+      length: rangeMatch[1],
+      width: rangeMatch[2],
+      unit: rangeMatch[3] || "cm",
+    };
+  }
+
+  const singleMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?$/);
+  if (singleMatch) {
+    return {
+      length: singleMatch[1],
+      width: "",
+      unit: singleMatch[2] || "cm",
+    };
+  }
+
+  return { length: "", width: "", unit: "cm" };
+};
+
+const buildDimensions = (length: string, width: string, unit: string) => {
+  const normalizedLength = length.trim();
+  const normalizedWidth = width.trim();
+
+  if (!normalizedLength && !normalizedWidth) {
+    return "";
+  }
+
+  if (normalizedLength && normalizedWidth) {
+    return `${normalizedLength}x${normalizedWidth} ${unit}`;
+  }
+
+  return `${normalizedLength || normalizedWidth} ${unit}`.trim();
+};
+
 export default function SizesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [sizeConfigurations, setSizeConfigurations] = useState<SizeConfig>({});
@@ -181,6 +229,29 @@ export default function SizesPage() {
       delete next[`${productId}:${index}`];
       return next;
     });
+  };
+
+  const updateDimensionsPart = (
+    productId: string,
+    index: number,
+    part: "length" | "width" | "unit",
+    value: string
+  ) => {
+    const currentSize = sizeConfigurations[productId]?.[index];
+    if (!currentSize) return;
+
+    const parsed = parseDimensionParts(currentSize.dimensions);
+    const nextParts = {
+      ...parsed,
+      [part]: value,
+    };
+
+    updateSize(
+      productId,
+      index,
+      "dimensions",
+      buildDimensions(nextParts.length, nextParts.width, nextParts.unit)
+    );
   };
 
   const getPriceDraftKey = (productId: string, index: number) => `${productId}:${index}`;
@@ -446,13 +517,62 @@ export default function SizesPage() {
                         />
                       </div>
                       <div className="col-span-3">
-                        <input
-                          type="text"
-                          value={size.dimensions}
-                          onChange={(e) => updateSize(selectedProduct.id, index, "dimensions", e.target.value)}
-                          placeholder="20x15 cm"
-                          className="w-full px-3 py-2 border rounded-lg"
-                        />
+                        {(() => {
+                          const { length, width, unit } = parseDimensionParts(size.dimensions);
+
+                          return (
+                            <div className="grid grid-cols-[1fr_1fr_88px] gap-2">
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                value={length}
+                                onChange={(e) =>
+                                  updateDimensionsPart(
+                                    selectedProduct.id,
+                                    index,
+                                    "length",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Length"
+                                className="w-full px-3 py-2 border rounded-lg"
+                              />
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                value={width}
+                                onChange={(e) =>
+                                  updateDimensionsPart(
+                                    selectedProduct.id,
+                                    index,
+                                    "width",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Width"
+                                className="w-full px-3 py-2 border rounded-lg"
+                              />
+                              <select
+                                value={unit}
+                                onChange={(e) =>
+                                  updateDimensionsPart(
+                                    selectedProduct.id,
+                                    index,
+                                    "unit",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-2 py-2 border rounded-lg bg-white"
+                              >
+                                {DIMENSION_UNITS.map((dimensionUnit) => (
+                                  <option key={dimensionUnit} value={dimensionUnit}>
+                                    {dimensionUnit}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="col-span-3">
                         {(() => {
