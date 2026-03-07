@@ -89,15 +89,20 @@ export async function updateSizeConfigurations(
 }
 
 export async function getProductSizes(product: { 
+  id: string;
   subcategory?: string; 
   name: string 
 }): Promise<ProductSize[] | undefined> {
-  const key = product.subcategory || product.name;
   const configurations = await getSizeConfigurations();
-  return configurations[key];
+  return (
+    configurations[product.id] ||
+    (product.subcategory ? configurations[product.subcategory] : undefined) ||
+    configurations[product.name]
+  );
 }
 
 export async function hasProductSizes(product: { 
+  id: string;
   subcategory?: string; 
   name: string 
 }): Promise<boolean> {
