@@ -2,6 +2,9 @@ import { Product } from "@/types";
 import * as SupabaseProducts from "@/lib/supabase/products";
 import { cloudinary } from "@/lib/cloudinary/client";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { hardcodedProducts } from "@/lib/data/products";
+import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
+import * as CategoriesStorage from "@/lib/supabase/categories";
 
 // Dynamically import blob storage to handle cases where it might not be available
 async function getProductsBlob(): Promise<any[]> {
@@ -219,13 +222,42 @@ export async function migrateProduct(
 }
 
 /**
+ * Seed category and subcategory metadata so admin/home can render empty or newly restored catalog areas
+ */
+async function seedCatalogMetadata(categoryNames: string[]): Promise<void> {
+  const uniqueCategoryNames = [...new Set(categoryNames.filter(Boolean))];
+
+  for (const categoryName of uniqueCategoryNames) {
+    await CategoriesStorage.updateCategoryImage(categoryName, null);
+
+    const subcategoryEntries =
+      staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
+
+    for (const subcategory of subcategoryEntries) {
+      await CategoriesStorage.updateSubcategoryImage(
+        categoryName,
+        subcategory.name,
+        subcategory.image || null
+      );
+    }
+  }
+}
+
+/**
  * Migrate all products from blob storage to Supabase
  */
 export async function migrateAllProducts(options: {
   migrateImages: boolean;
   skipExisting: boolean;
   batchSize?: number;
-} = { migrateImages: true, skipExisting: true, batchSize: 10 }): Promise<{
+  source?: "blob" | "hardcoded";
+  category?: string;
+} = {
+  migrateImages: true,
+  skipExisting: true,
+  batchSize: 10,
+  source: "blob",
+}): Promise<{
   total: number;
   successful: number;
   failed: number;
@@ -233,20 +265,25 @@ export async function migrateAllProducts(options: {
   results: Array<{ productId: string; success: boolean; message: string }>;
 }> {
   try {
-    // Get all products from blob storage
-    let blobProducts: any[];
-    try {
-      blobProducts = await getProductsBlob();
-    } catch (error: any) {
-      if (error.message?.includes("Can't resolve '@vercel/blob'") || 
-          error.message?.includes("Cannot find module") ||
-          error.message?.includes("not available")) {
-        throw new Error("Blob storage is not available. Please ensure @vercel/blob is installed and BLOB_READ_WRITE_TOKEN is configured in your environment variables.");
+    const source = options.source || "blob";
+    let sourceProducts: any[];
+
+    if (source === "hardcoded") {
+      sourceProducts = hardcodedProducts;
+    } else {
+      try {
+        sourceProducts = await getProductsBlob();
+      } catch (error: any) {
+        if (error.message?.includes("Can't resolve '@vercel/blob'") || 
+            error.message?.includes("Cannot find module") ||
+            error.message?.includes("not available")) {
+          throw new Error("Blob storage is not available. Please ensure @vercel/blob is installed and BLOB_READ_WRITE_TOKEN is configured in your environment variables.");
+        }
+        throw error;
       }
-      throw error;
     }
-    
-    if (!blobProducts || blobProducts.length === 0) {
+
+    if (!sourceProducts || sourceProducts.length === 0) {
       return {
         total: 0,
         successful: 0,
@@ -256,12 +293,30 @@ export async function migrateAllProducts(options: {
       };
     }
 
-    // Convert to Product format
-    const products: Product[] = blobProducts.map((p: any) => ({
+    let products: Product[] = sourceProducts.map((p: any) => ({
       ...p,
       createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
       updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
     }));
+
+    if (options.category) {
+      const normalizedCategory = options.category.trim().toLowerCase();
+      products = products.filter(
+        (product) => product.category?.trim().toLowerCase() === normalizedCategory
+      );
+    }
+
+    if (products.length === 0) {
+      return {
+        total: 0,
+        successful: 0,
+        failed: 0,
+        skipped: 0,
+        results: [],
+      };
+    }
+
+    await seedCatalogMetadata(products.map((product) => product.category));
 
     const results: Array<{ productId: string; success: boolean; message: string }> = [];
     let successful = 0;
