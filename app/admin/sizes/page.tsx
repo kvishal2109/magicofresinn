@@ -521,7 +521,7 @@ export default function SizesPage() {
                           const { length, width, unit } = parseDimensionParts(size.dimensions);
 
                           return (
-                            <div className="flex items-stretch rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm">
+                            <div className="grid grid-cols-[minmax(88px,1fr)_44px_minmax(88px,1fr)_88px] items-stretch rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm">
                               <input
                                 type="text"
                                 inputMode="decimal"
@@ -535,9 +535,9 @@ export default function SizesPage() {
                                   )
                                 }
                                 placeholder="Length"
-                                className="w-full min-w-0 px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 outline-none"
+                                className="w-full min-w-[88px] px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 outline-none"
                               />
-                              <span className="flex items-center justify-center px-3 bg-gray-50 border-l border-r border-gray-200 text-gray-500 font-medium">
+                              <span className="flex items-center justify-center bg-gray-50 border-l border-r border-gray-200 text-gray-500 font-medium">
                                 x
                               </span>
                               <input
@@ -553,7 +553,7 @@ export default function SizesPage() {
                                   )
                                 }
                                 placeholder="Width"
-                                className="w-full min-w-0 px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 outline-none"
+                                className="w-full min-w-[88px] px-3 py-2 bg-white text-gray-900 placeholder:text-gray-400 outline-none"
                               />
                               <select
                                 value={unit}
@@ -565,7 +565,7 @@ export default function SizesPage() {
                                     e.target.value
                                   )
                                 }
-                                className="w-24 px-3 py-2 border-l border-gray-200 bg-gray-50 text-gray-900 outline-none"
+                                className="w-full px-3 py-2 border-l border-gray-200 bg-gray-50 text-gray-900 outline-none"
                               >
                                 {DIMENSION_UNITS.map((dimensionUnit) => (
                                   <option key={dimensionUnit} value={dimensionUnit}>
