@@ -18,18 +18,20 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Size configurations table
+-- Size configurations table (product-level size charts)
 CREATE TABLE IF NOT EXISTS size_configurations (
   id SERIAL PRIMARY KEY,
-  category_name TEXT NOT NULL,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   size_id TEXT NOT NULL,
   size_label TEXT NOT NULL,
   dimensions TEXT NOT NULL,
   price_modifier DECIMAL(10,2) DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(category_name, size_id)
+  UNIQUE(product_id, size_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_size_configurations_product_id ON size_configurations(product_id);
 
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (

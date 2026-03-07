@@ -24,6 +24,74 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Size configurations table (product-level size charts)
+CREATE TABLE IF NOT EXISTS size_configurations (
+  id SERIAL PRIMARY KEY,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  size_id TEXT NOT NULL,
+  size_label TEXT NOT NULL,
+  dimensions TEXT NOT NULL,
+  price_modifier DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(product_id, size_id)
+);
+
+-- Backward-compatible migration if you already created the old table shape
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS product_id TEXT;
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS size_id TEXT;
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS size_label TEXT;
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS dimensions TEXT;
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS price_modifier DECIMAL(10,2) DEFAULT 0;
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+ALTER TABLE size_configurations
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'size_configurations'
+      AND column_name = 'category_name'
+  ) THEN
+    EXECUTE '
+      UPDATE size_configurations
+      SET product_id = category_name
+      WHERE product_id IS NULL
+    ';
+    ALTER TABLE size_configurations DROP CONSTRAINT IF EXISTS size_configurations_category_name_size_id_key;
+  END IF;
+
+  ALTER TABLE size_configurations DROP CONSTRAINT IF EXISTS size_configurations_product_id_size_id_key;
+  ALTER TABLE size_configurations
+    ADD CONSTRAINT size_configurations_product_id_size_id_key UNIQUE (product_id, size_id);
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.table_constraints
+    WHERE table_name = 'size_configurations'
+      AND constraint_type = 'FOREIGN KEY'
+      AND constraint_name = 'size_configurations_product_id_fkey'
+  ) THEN
+    ALTER TABLE size_configurations
+      ADD CONSTRAINT size_configurations_product_id_fkey
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
@@ -79,6 +147,7 @@ CREATE TABLE IF NOT EXISTS coupons (
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_size_configurations_product_id ON size_configurations(product_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(order_status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
