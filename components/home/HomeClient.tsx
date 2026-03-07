@@ -297,6 +297,14 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
         const slug = SUBCATEGORY_NAME_TO_SLUG[subName] || normalizeCategorySlug(subName);
         const staticSubs = staticSubcategories[category as keyof typeof staticSubcategories] || [];
         const staticSub = staticSubs.find((s) => normalizeText(s.name) === normalizeText(subName) || s.slug === slug);
+        const firstProductImage =
+          products.find(
+            (p) =>
+              normalizeText(p.category) === normalizeText(category) &&
+              p.subcategory &&
+              normalizeText(p.subcategory) === normalizeText(subName) &&
+              p.image
+          )?.image || undefined;
         
         let productCount = products.filter(
           (p) => p.category === category && p.subcategory === subName
@@ -314,7 +322,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
         return {
           name: subName,
           slug,
-          image: staticSub?.image,
+          image: staticSub?.image || firstProductImage,
           productCount,
         };
       });
