@@ -20,6 +20,7 @@ export default function SizesPage() {
   const [sizeConfigurations, setSizeConfigurations] = useState<SizeConfig>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [expandedSubcategories, setExpandedSubcategories] = useState<Record<string, boolean>>({});
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -175,16 +176,77 @@ export default function SizesPage() {
 
   const deleteSize = (productId: string, index: number) => {
     setProductSizes(productId, (sizes) => sizes.filter((_, sizeIndex) => sizeIndex !== index));
+    setPriceDrafts((current) => {
+      const next = { ...current };
+      delete next[`${productId}:${index}`];
+      return next;
+    });
+  };
+
+  const getPriceDraftKey = (productId: string, index: number) => `${productId}:${index}`;
+
+  const handlePriceDraftChange = (productId: string, index: number, value: string) => {
+    const draftKey = getPriceDraftKey(productId, index);
+
+    if (!/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+
+    setPriceDrafts((current) => ({
+      ...current,
+      [draftKey]: value,
+    }));
+  };
+
+  const commitPriceDraft = (productId: string, index: number) => {
+    const draftKey = getPriceDraftKey(productId, index);
+    const draftValue = priceDrafts[draftKey];
+
+    if (draftValue === undefined) {
+      return;
+    }
+
+    updateSize(
+      productId,
+      index,
+      "priceModifier",
+      draftValue.trim() === "" ? 0 : Number(draftValue)
+    );
+
+    setPriceDrafts((current) => {
+      const next = { ...current };
+      delete next[draftKey];
+      return next;
+    });
   };
 
   const saveSizes = async () => {
     setSaving(true);
 
     try {
+      const sanitizedConfigurations: SizeConfig = Object.fromEntries(
+        Object.entries(sizeConfigurations).map(([productId, sizes]) => [
+          productId,
+          sizes.map((size, index) => {
+            const draftValue = priceDrafts[getPriceDraftKey(productId, index)];
+            return {
+              ...size,
+              priceModifier:
+                draftValue === undefined || draftValue.trim() === ""
+                  ? size.priceModifier
+                  : Number(draftValue),
+            };
+          }),
+        ])
+      );
+
+      setSizeConfigurations(sanitizedConfigurations);
+      setPriceDrafts({});
+
       const response = await fetch("/api/admin/sizes/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sizeConfigurations }),
+        body: JSON.stringify({ sizeConfigurations: sanitizedConfigurations }),
       });
 
       if (!response.ok) {
@@ -393,20 +455,29 @@ export default function SizesPage() {
                         />
                       </div>
                       <div className="col-span-3">
+                        {(() => {
+                          const draftKey = getPriceDraftKey(selectedProduct.id, index);
+                          const priceValue =
+                            priceDrafts[draftKey] ?? String(size.priceModifier ?? 0);
+
+                          return (
                         <input
                           type="number"
-                          value={size.priceModifier}
+                          value={priceValue}
                           onChange={(e) =>
-                            updateSize(
-                              selectedProduct.id,
-                              index,
-                              "priceModifier",
-                              Number(e.target.value) || 0
-                            )
+                            handlePriceDraftChange(selectedProduct.id, index, e.target.value)
                           }
+                          onBlur={() => commitPriceDraft(selectedProduct.id, index)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              commitPriceDraft(selectedProduct.id, index);
+                            }
+                          }}
                           placeholder="0"
                           className="w-full px-3 py-2 border rounded-lg"
                         />
+                          );
+                        })()}
                       </div>
                       <div className="col-span-2">
                         <button
