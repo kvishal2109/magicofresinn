@@ -491,9 +491,9 @@ export default function SizesPage() {
                   <div className="grid grid-cols-12 gap-3 pb-2 border-b font-semibold text-sm text-gray-700">
                     <div className="col-span-2">Size ID</div>
                     <div className="col-span-2">Label</div>
-                    <div className="col-span-3">Dimensions</div>
+                    <div className="col-span-4">Dimensions</div>
                     <div className="col-span-3">Price Modifier</div>
-                    <div className="col-span-2">Actions</div>
+                    <div className="col-span-1">Actions</div>
                   </div>
 
                   {selectedProductSizes.map((size, index) => (
@@ -516,12 +516,12 @@ export default function SizesPage() {
                           className="w-full px-3 py-2 border rounded-lg"
                         />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-4">
                         {(() => {
                           const { length, width, unit } = parseDimensionParts(size.dimensions);
 
                           return (
-                            <div className="grid grid-cols-[1fr_1fr_88px] gap-2">
+                            <div className="flex items-center rounded-lg border bg-white overflow-hidden">
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -535,8 +535,9 @@ export default function SizesPage() {
                                   )
                                 }
                                 placeholder="Length"
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full min-w-0 px-3 py-2 outline-none"
                               />
+                              <span className="px-2 text-gray-400 font-medium">x</span>
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -550,7 +551,7 @@ export default function SizesPage() {
                                   )
                                 }
                                 placeholder="Width"
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="w-full min-w-0 px-3 py-2 outline-none border-l border-gray-100"
                               />
                               <select
                                 value={unit}
@@ -562,7 +563,7 @@ export default function SizesPage() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full px-2 py-2 border rounded-lg bg-white"
+                                className="w-24 px-3 py-2 border-l border-gray-200 bg-gray-50 outline-none"
                               >
                                 {DIMENSION_UNITS.map((dimensionUnit) => (
                                   <option key={dimensionUnit} value={dimensionUnit}>
@@ -599,7 +600,7 @@ export default function SizesPage() {
                           );
                         })()}
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 flex justify-center">
                         <button
                           onClick={() => deleteSize(selectedProduct.id, index)}
                           className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition-colors"
