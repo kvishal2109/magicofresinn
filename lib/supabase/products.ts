@@ -54,26 +54,6 @@ export async function getAllProducts(): Promise<Product[]> {
       updatedAt: new Date(row.updated_at),
     }));
 
-    // Log product distribution by category
-    const categoryCounts = products.reduce((acc, p) => {
-      acc[p.category] = (acc[p.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    console.log("Products by category:", categoryCounts);
-
-    // If we have very few products or missing categories, merge with hardcoded
-    const hasAllCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"].every(
-      cat => products.some(p => p.category === cat)
-    );
-
-    if (!hasAllCategories || products.length < 10) {
-      console.log("Database has incomplete product data, merging with hardcoded products");
-      // Merge: use database products, but add hardcoded ones that don't exist
-      const dbProductIds = new Set(products.map(p => p.id));
-      const additionalProducts = hardcodedProducts.filter(p => !dbProductIds.has(p.id));
-      return [...products, ...additionalProducts];
-    }
-
     return products;
   } catch (error) {
     console.error("Error fetching products from Supabase, using hardcoded:", error);
@@ -182,7 +162,6 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
  * Get all categories
  */
 export async function getAllCategories(): Promise<string[]> {
-  // Always include standard categories, even if they have no products
   const standardCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
   
   try {
@@ -202,22 +181,20 @@ export async function getAllCategories(): Promise<string[]> {
       ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
     ].filter(Boolean);
     
-    // Combine standard categories with any additional categories from products
+    // Combine categories from products and admin-managed metadata.
     const allCategories = new Set([
-      ...standardCategories,
       ...productCategories,
       ...metadataCategories,
     ]);
     
-    // Order: standard categories first, then any additional ones
+    // Keep familiar ordering when these categories exist, but do not force them in.
     const orderedCategories = standardCategories.filter(cat => allCategories.has(cat));
     const remainingCategories = Array.from(allCategories).filter(cat => !standardCategories.includes(cat));
     
     return [...orderedCategories, ...remainingCategories];
   } catch (error) {
-    console.error("Error fetching categories, using standard categories:", error);
-    // Return standard categories as fallback
-    return standardCategories;
+    console.error("Error fetching categories, using hardcoded fallback:", error);
+    return [...new Set(hardcodedProducts.map((product) => product.category).filter(Boolean))];
   }
 }
 
@@ -434,6 +411,34 @@ export async function bulkUpdateCategory(
     }
   } catch (error) {
     console.error("Error bulk updating category:", error);
+    throw error;
+  }
+}
+
+/**
+ * Admin Functions - Bulk update subcategory (rename subcategory within a category)
+ */
+export async function bulkUpdateSubcategory(
+  categoryName: string,
+  oldSubcategory: string,
+  newSubcategory: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("products")
+      .update({
+        subcategory: newSubcategory,
+        updated_at: new Date().toISOString(),
+      })
+      .ilike("category", categoryName)
+      .ilike("subcategory", oldSubcategory);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error bulk updating subcategory:", error);
     throw error;
   }
 }

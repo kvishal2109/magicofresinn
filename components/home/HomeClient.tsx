@@ -327,26 +327,18 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
 
   const getCategorySubcategories = (categoryName: string): SubcategoryDisplay[] => {
     const combined = new Map<string, SubcategoryDisplay>();
-    const staticSubs = staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
     const metadataSubs = metadataSubcategoriesByCategory[categoryName] || [];
     const productSubs = productSubcategories[categoryName] || [];
-
-    staticSubs.forEach((sub) => {
-      combined.set(normalizeText(sub.name), {
-        name: sub.name,
-        slug: sub.slug || normalizeCategorySlug(sub.name),
-        image: sub.image,
-        productCount: 0,
-      });
-    });
+    const staticSubs = staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
 
     metadataSubs.forEach((sub) => {
       const key = normalizeText(sub.name);
       const existing = combined.get(key);
+      const staticSub = staticSubs.find((item) => normalizeText(item.name) === key);
       combined.set(key, {
         name: existing?.name || sub.name,
         slug: existing?.slug || SUBCATEGORY_NAME_TO_SLUG[sub.name] || normalizeCategorySlug(sub.name),
-        image: sub.image || existing?.image,
+        image: sub.image || existing?.image || staticSub?.image,
         productCount: existing?.productCount || 0,
       });
     });

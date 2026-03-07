@@ -23,6 +23,8 @@ export default function CategoriesPage() {
   const [selectedCategoryForSubcategory, setSelectedCategoryForSubcategory] = useState<string>("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState("");
+  const [editingSubcategoryKey, setEditingSubcategoryKey] = useState<string | null>(null);
+  const [editSubcategoryName, setEditSubcategoryName] = useState("");
   const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<{ name: string; count: number } | null>(null);
@@ -219,6 +221,34 @@ export default function CategoriesPage() {
 
       toast.success(`Category renamed from "${oldCategory}" to "${editCategoryName.trim()}"`);
       setEditingCategory(null);
+
+      setCategoriesMetadata((current) => {
+        const nextCategories = { ...current.categories };
+        const nextSubcategories = { ...current.subcategories };
+
+        if (nextCategories[oldCategory]) {
+          nextCategories[editCategoryName.trim()] = {
+            ...nextCategories[oldCategory],
+            name: editCategoryName.trim(),
+          };
+          delete nextCategories[oldCategory];
+        }
+
+        Object.entries(current.subcategories).forEach(([key, value]) => {
+          if (value.categoryName === oldCategory) {
+            delete nextSubcategories[key];
+            nextSubcategories[`${editCategoryName.trim()}::${value.subcategoryName}`] = {
+              ...value,
+              categoryName: editCategoryName.trim(),
+            };
+          }
+        });
+
+        return {
+          categories: nextCategories,
+          subcategories: nextSubcategories,
+        };
+      });
       
       // Optimistically update cache
       mutate(
@@ -245,6 +275,91 @@ export default function CategoriesPage() {
       count: categoryData?.productCount || 0,
     });
     setShowDeleteModal(true);
+  };
+
+  const handleEditSubcategory = (categoryName: string, subcategoryName: string) => {
+    setEditingSubcategoryKey(`${categoryName}::${subcategoryName}`);
+    setEditSubcategoryName(subcategoryName);
+  };
+
+  const handleSaveSubcategory = async (categoryName: string, oldSubcategory: string) => {
+    const trimmedNewName = editSubcategoryName.trim();
+
+    if (!trimmedNewName) {
+      toast.error("Subcategory name cannot be empty");
+      return;
+    }
+
+    if (trimmedNewName === oldSubcategory) {
+      setEditingSubcategoryKey(null);
+      return;
+    }
+
+    const subcategoryExists = categoriesWithSubcategories
+      .find((category) => category.name === categoryName)
+      ?.subcategories.some(
+        (subcategory) =>
+          subcategory.name.toLowerCase() === trimmedNewName.toLowerCase() &&
+          subcategory.name !== oldSubcategory
+      );
+
+    if (subcategoryExists) {
+      toast.error("Subcategory name already exists in this category");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryName,
+          oldSubcategory,
+          newSubcategory: trimmedNewName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update subcategory");
+      }
+
+      toast.success(`Subcategory renamed from "${oldSubcategory}" to "${trimmedNewName}"`);
+      setEditingSubcategoryKey(null);
+
+      mutate(
+        (current) =>
+          current?.map((product) =>
+            product.category === categoryName && product.subcategory === oldSubcategory
+              ? { ...product, subcategory: trimmedNewName, updatedAt: new Date() }
+              : product
+          ) || current,
+        { revalidate: false }
+      );
+
+      setCategoriesMetadata((current) => {
+        const nextSubcategories = { ...current.subcategories };
+        const oldKey = `${categoryName}::${oldSubcategory}`;
+        const oldMetadata = nextSubcategories[oldKey];
+        if (oldMetadata) {
+          delete nextSubcategories[oldKey];
+          nextSubcategories[`${categoryName}::${trimmedNewName}`] = {
+            ...oldMetadata,
+            subcategoryName: trimmedNewName,
+          };
+        }
+
+        return {
+          ...current,
+          subcategories: nextSubcategories,
+        };
+      });
+
+      mutate();
+    } catch (error) {
+      console.error("Error updating subcategory:", error);
+      toast.error("Failed to update subcategory");
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -582,26 +697,70 @@ export default function CategoriesPage() {
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       <div className="text-xs font-medium text-gray-600 mb-1">Subcategories:</div>
                       <div className="flex flex-wrap gap-1">
-                        {category.subcategories.map((subcat) => (
-                          <div
-                            key={subcat.name}
-                            className="relative group"
-                          >
-                            <span className="px-2 py-1 text-xs bg-white border border-gray-300 rounded text-gray-700 flex items-center gap-1">
-                              {subcat.image && (
-                                <img
-                                  src={subcat.image}
-                                  alt={subcat.name}
-                                  className="w-4 h-4 object-cover rounded"
-                                />
-                              )}
-                              {subcat.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                         {category.subcategories.map((subcat) => {
+                           const subcategoryKey = `${category.name}::${subcat.name}`;
+
+                           return (
+                             <div
+                               key={subcategoryKey}
+                               className="relative group"
+                             >
+                               {editingSubcategoryKey === subcategoryKey ? (
+                                 <div className="flex items-center gap-1">
+                                   <input
+                                     type="text"
+                                     value={editSubcategoryName}
+                                     onChange={(e) => setEditSubcategoryName(e.target.value)}
+                                     className="w-36 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                     autoFocus
+                                     onKeyDown={(e) => {
+                                       if (e.key === "Enter") {
+                                         handleSaveSubcategory(category.name, subcat.name);
+                                       } else if (e.key === "Escape") {
+                                         setEditingSubcategoryKey(null);
+                                       }
+                                     }}
+                                   />
+                                   <button
+                                     onClick={() => handleSaveSubcategory(category.name, subcat.name)}
+                                     className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                     title="Save"
+                                   >
+                                     <Check className="w-3.5 h-3.5" />
+                                   </button>
+                                   <button
+                                     onClick={() => setEditingSubcategoryKey(null)}
+                                     className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                                     title="Cancel"
+                                   >
+                                     <X className="w-3.5 h-3.5" />
+                                   </button>
+                                 </div>
+                               ) : (
+                                 <span className="px-2 py-1 text-xs bg-white border border-gray-300 rounded text-gray-700 flex items-center gap-1">
+                                   {subcat.image && (
+                                     <img
+                                       src={subcat.image}
+                                       alt={subcat.name}
+                                       className="w-4 h-4 object-cover rounded"
+                                     />
+                                   )}
+                                   {subcat.name}
+                                   <button
+                                     onClick={() => handleEditSubcategory(category.name, subcat.name)}
+                                     className="ml-1 p-0.5 text-blue-600 hover:bg-blue-50 rounded"
+                                     title="Edit subcategory"
+                                   >
+                                     <Edit2 className="w-3 h-3" />
+                                   </button>
+                                 </span>
+                               )}
+                             </div>
+                           );
+                         })}
+                       </div>
+                     </div>
+                   )}
                 </div>
               ))}
             </div>

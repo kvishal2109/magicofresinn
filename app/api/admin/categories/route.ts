@@ -26,23 +26,64 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError;
 
     const body = await request.json();
-    const { oldCategory, newCategory } = body;
+    const {
+      oldCategory,
+      newCategory,
+      categoryName,
+      oldSubcategory,
+      newSubcategory,
+    } = body;
 
-    if (!oldCategory || !newCategory) {
-      return NextResponse.json(
-        { error: "oldCategory and newCategory are required" },
-        { status: 400 }
-      );
+    if (oldCategory || newCategory) {
+      if (!oldCategory || !newCategory) {
+        return NextResponse.json(
+          { error: "oldCategory and newCategory are required" },
+          { status: 400 }
+        );
+      }
+
+      if (oldCategory === newCategory) {
+        return NextResponse.json(
+          { error: "Old and new category names cannot be the same" },
+          { status: 400 }
+        );
+      }
+
+      await Promise.all([
+        SupabaseProducts.bulkUpdateCategory(oldCategory, newCategory),
+        CategoriesStorage.renameCategoryMetadata(oldCategory, newCategory),
+      ]);
+    } else {
+      if (!categoryName || !oldSubcategory || !newSubcategory) {
+        return NextResponse.json(
+          { error: "categoryName, oldSubcategory and newSubcategory are required" },
+          { status: 400 }
+        );
+      }
+
+      if (oldSubcategory === newSubcategory) {
+        return NextResponse.json(
+          { error: "Old and new subcategory names cannot be the same" },
+          { status: 400 }
+        );
+      }
+
+      await Promise.all([
+        SupabaseProducts.bulkUpdateSubcategory(categoryName, oldSubcategory, newSubcategory),
+        CategoriesStorage.renameSubcategoryMetadata(categoryName, oldSubcategory, newSubcategory),
+      ]);
     }
 
-    if (oldCategory === newCategory) {
-      return NextResponse.json(
-        { error: "Old and new category names cannot be the same" },
-        { status: 400 }
-      );
+    try {
+      revalidatePath("/");
+      revalidatePath("/api/categories");
+      revalidatePath("/products/[category]/[subcategory]", "page");
+      revalidatePath("/admin/categories");
+      revalidatePath("/admin/products");
+    } catch (revalidateError) {
+      console.error("Error revalidating category pages:", revalidateError);
     }
 
-    await SupabaseProducts.bulkUpdateCategory(oldCategory, newCategory);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error updating category:", error);

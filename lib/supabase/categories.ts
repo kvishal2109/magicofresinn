@@ -189,6 +189,50 @@ export async function deleteCategoryMetadata(categoryName: string): Promise<void
 }
 
 /**
+ * Rename a category metadata row and its subcategory rows
+ */
+export async function renameCategoryMetadata(
+  oldCategoryName: string,
+  newCategoryName: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("categories_metadata")
+      .update({ category_name: newCategoryName })
+      .eq("category_name", oldCategoryName);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error renaming category metadata:", error);
+    throw error;
+  }
+}
+
+/**
+ * Rename a specific subcategory metadata row
+ */
+export async function renameSubcategoryMetadata(
+  categoryName: string,
+  oldSubcategoryName: string,
+  newSubcategoryName: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("categories_metadata")
+      .update({ subcategory_name: newSubcategoryName })
+      .eq("category_name", categoryName)
+      .eq("subcategory_name", oldSubcategoryName);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error renaming subcategory metadata:", error);
+    throw error;
+  }
+}
+
+/**
  * Delete a specific subcategory metadata row
  */
 export async function deleteSubcategoryMetadata(
