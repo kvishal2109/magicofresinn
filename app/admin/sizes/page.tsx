@@ -523,7 +523,7 @@ export default function SizesPage() {
                           return (
                             <div className="flex items-stretch rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm">
                               <input
-                                type="number"
+                                type="text"
                                 inputMode="decimal"
                                 value={length}
                                 onChange={(e) =>
@@ -541,7 +541,7 @@ export default function SizesPage() {
                                 x
                               </span>
                               <input
-                                type="number"
+                                type="text"
                                 inputMode="decimal"
                                 value={width}
                                 onChange={(e) =>
@@ -585,7 +585,8 @@ export default function SizesPage() {
 
                           return (
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={priceValue}
                           onChange={(e) =>
                             handlePriceDraftChange(selectedProduct.id, index, e.target.value)
