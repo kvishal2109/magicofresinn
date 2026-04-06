@@ -68,10 +68,17 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      await Promise.all([
-        SupabaseProducts.bulkUpdateSubcategory(categoryName, oldSubcategory, newSubcategory),
-        CategoriesStorage.renameSubcategoryMetadata(categoryName, oldSubcategory, newSubcategory),
-      ]);
+      // Products first (source of truth), then metadata — avoids inconsistent state if metadata fails alone
+      await SupabaseProducts.bulkUpdateSubcategory(
+        categoryName,
+        oldSubcategory,
+        newSubcategory
+      );
+      await CategoriesStorage.renameSubcategoryMetadata(
+        categoryName,
+        oldSubcategory,
+        newSubcategory
+      );
     }
 
     try {
@@ -87,10 +94,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error updating category:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update category" },
-      { status: 500 }
-    );
+    const msg =
+      error?.message ||
+      error?.error_description ||
+      (typeof error === "string" ? error : null) ||
+      "Failed to update category";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 

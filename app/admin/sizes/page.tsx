@@ -340,7 +340,7 @@ export default function SizesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Size Chart Management</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -350,14 +350,14 @@ export default function SizesPage() {
         <button
           onClick={saveSizes}
           disabled={saving}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[380px_minmax(0,1fr)] gap-6">
         <div className="bg-white border rounded-lg p-4 h-fit">
           <h2 className="text-lg font-semibold mb-4">Catalog</h2>
           <div className="space-y-3">
@@ -444,10 +444,10 @@ export default function SizesPage() {
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-6">
+        <div className="bg-white border rounded-lg p-4 sm:p-6">
           {selectedProduct ? (
             <div className="space-y-6">
-              <div className="flex items-start justify-between gap-4 border-b pb-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b pb-4">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">{selectedProduct.name}</h2>
                   <div className="text-sm text-gray-500 mt-1">
@@ -456,8 +456,8 @@ export default function SizesPage() {
                     {selectedProduct.subcategory || "General"}
                   </div>
                 </div>
-                <div className="text-sm text-gray-500 text-right">
-                  <div className="flex items-center gap-1 justify-end">
+                <div className="text-sm text-gray-500 sm:text-right">
+                  <div className="flex items-center gap-1 sm:justify-end">
                     <Package className="w-4 h-4" />
                     <span>{selectedProduct.id}</span>
                   </div>
@@ -465,7 +465,7 @@ export default function SizesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-semibold text-gray-900">Sizes</h3>
                   <p className="text-sm text-gray-500">
@@ -474,7 +474,7 @@ export default function SizesPage() {
                 </div>
                 <button
                   onClick={addSize}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   <Plus className="w-4 h-4" />
                   Add Size
@@ -488,17 +488,23 @@ export default function SizesPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-12 gap-3 pb-2 border-b font-semibold text-sm text-gray-700">
-                    <div className="col-span-2">Size ID</div>
-                    <div className="col-span-2">Label</div>
-                    <div className="col-span-4">Dimensions</div>
-                    <div className="col-span-3">Price Modifier</div>
-                    <div className="col-span-1">Actions</div>
+                  <div className="hidden md:grid md:grid-cols-12 gap-3 pb-2 border-b font-semibold text-sm text-gray-700">
+                    <div className="md:col-span-2">Size ID</div>
+                    <div className="md:col-span-2">Label</div>
+                    <div className="md:col-span-4">Dimensions</div>
+                    <div className="md:col-span-3">Price Modifier</div>
+                    <div className="md:col-span-1">Actions</div>
                   </div>
 
                   {selectedProductSizes.map((size, index) => (
-                    <div key={`${selectedProduct.id}-${index}`} className="grid grid-cols-12 gap-3 items-center">
-                      <div className="col-span-2">
+                    <div
+                      key={`${selectedProduct.id}-${index}`}
+                      className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center rounded-xl border border-gray-200 p-4 md:border-0 md:p-0"
+                    >
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 md:hidden">
+                          Size ID
+                        </label>
                         <input
                           type="text"
                           value={size.id}
@@ -507,7 +513,10 @@ export default function SizesPage() {
                           className="w-full px-3 py-2 border rounded-lg"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 md:hidden">
+                          Label
+                        </label>
                         <input
                           type="text"
                           value={size.label}
@@ -516,12 +525,15 @@ export default function SizesPage() {
                           className="w-full px-3 py-2 border rounded-lg"
                         />
                       </div>
-                      <div className="col-span-4">
+                      <div className="md:col-span-4">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 md:hidden">
+                          Dimensions
+                        </label>
                         {(() => {
                           const { length, width, unit } = parseDimensionParts(size.dimensions);
 
                           return (
-                            <div className="grid grid-cols-[minmax(88px,1fr)_44px_minmax(88px,1fr)_88px] items-stretch rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm">
+                            <div className="grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)_76px] sm:grid-cols-[minmax(88px,1fr)_44px_minmax(88px,1fr)_88px] items-stretch rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm">
                               <input
                                 type="text"
                                 inputMode="decimal"
@@ -577,7 +589,10 @@ export default function SizesPage() {
                           );
                         })()}
                       </div>
-                      <div className="col-span-3">
+                      <div className="md:col-span-3">
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500 md:hidden">
+                          Price Modifier
+                        </label>
                         {(() => {
                           const draftKey = getPriceDraftKey(selectedProduct.id, index);
                           const priceValue =
@@ -603,10 +618,10 @@ export default function SizesPage() {
                           );
                         })()}
                       </div>
-                      <div className="col-span-1 flex justify-center">
+                      <div className="md:col-span-1 flex justify-end md:justify-center">
                         <button
                           onClick={() => deleteSize(selectedProduct.id, index)}
-                          className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition-colors"
+                          className="inline-flex items-center justify-center text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition-colors"
                           title="Delete size"
                         >
                           <Trash2 className="w-4 h-4" />

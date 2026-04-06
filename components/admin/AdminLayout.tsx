@@ -30,15 +30,35 @@ export default function AdminLayout({
 
   // Load sidebar state from localStorage on mount
   useEffect(() => {
-    const savedSidebarState = localStorage.getItem("adminSidebarOpen");
-    if (savedSidebarState !== null) {
-      setSidebarOpen(savedSidebarState === "true");
-    }
+    const syncSidebarState = () => {
+      const savedSidebarState = localStorage.getItem("adminSidebarOpen");
+
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+        return;
+      }
+
+      if (savedSidebarState !== null) {
+        setSidebarOpen(savedSidebarState === "true");
+        return;
+      }
+
+      setSidebarOpen(true);
+    };
+
+    syncSidebarState();
+    window.addEventListener("resize", syncSidebarState);
+
+    return () => {
+      window.removeEventListener("resize", syncSidebarState);
+    };
   }, []);
 
   // Save sidebar state to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem("adminSidebarOpen", sidebarOpen.toString());
+    if (window.innerWidth >= 768) {
+      localStorage.setItem("adminSidebarOpen", sidebarOpen.toString());
+    }
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -154,7 +174,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <aside 
-        className={`bg-white shadow-xl w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${
+        className={`bg-white shadow-xl w-[min(18rem,85vw)] md:w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -198,7 +218,7 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0 md:ml-64">
         {/* Top bar */}
         <header className="bg-white shadow-sm border-b sticky top-0 z-30">
-          <div className="px-4 py-4">
+          <div className="px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
                 {/* Hamburger menu - visible on all screen sizes for sidebar toggle */}
@@ -227,7 +247,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );

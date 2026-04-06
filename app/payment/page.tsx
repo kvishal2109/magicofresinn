@@ -58,21 +58,21 @@ function PaymentPageContent() {
   const amountNum = parseFloat(amount);
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
       <div className="max-w-4xl mx-auto">
         <div className="mb-4">
           <CouponBanner variant="compact" />
         </div>
         <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
             Complete Payment
           </h1>
-          <p className="text-gray-600 text-lg">Scan the QR code to complete your payment</p>
+          <p className="text-gray-600 text-base sm:text-lg">Scan the QR code to complete your payment</p>
         </div>
 
         <div className="max-w-2xl mx-auto">
           {/* Payment Section - Dynamic based on method */}
-          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-8 border-2 border-purple-200 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-5 sm:p-8 border-2 border-purple-200 backdrop-blur-sm">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
                 Payment Details
@@ -89,7 +89,7 @@ function PaymentPageContent() {
             )}
 
             <div className="text-center mb-6">
-              <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              <div className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 {formatCurrency(amountNum)}
               </div>
               <p className="text-gray-600 text-sm font-medium">Please pay the exact amount shown above</p>
@@ -97,13 +97,13 @@ function PaymentPageContent() {
 
             {/* QR Code Display */}
             <div className="flex flex-col items-center mb-6">
-              <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-purple-200 mb-4">
+              <div className="bg-white p-3 sm:p-4 rounded-xl shadow-lg border-2 border-purple-200 mb-4">
                 <Image
                   src={qrCodeImage}
                   alt="Payment QR Code"
                   width={250}
                   height={250}
-                  className="rounded-lg"
+                  className="w-[210px] h-[210px] sm:w-[250px] sm:h-[250px] rounded-lg"
                   priority
                 />
               </div>
@@ -117,7 +117,7 @@ function PaymentPageContent() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Or send payment to UPI ID:
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
                   value={merchantUpiId}
@@ -126,7 +126,7 @@ function PaymentPageContent() {
                 />
                 <button
                   onClick={copyUpiId}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-bold shadow-lg hover:shadow-xl hover:scale-105 transform duration-300 flex items-center gap-2 text-sm"
+                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-bold shadow-lg hover:shadow-xl hover:scale-105 transform duration-300 flex items-center justify-center gap-2 text-sm"
                 >
                   {copied ? (
                     <>

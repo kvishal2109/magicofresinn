@@ -868,14 +868,14 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
             </div>
           </div>
           
-          <p className="text-purple-800 text-xl md:text-2xl mb-7 font-light drop-shadow-sm">
+          <p className="text-purple-800 text-lg sm:text-xl md:text-2xl mb-7 font-light drop-shadow-sm">
             Discover Beautiful Handcrafted Products for Every Celebration
           </p>
 
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto">
             <form onSubmit={handleSearchSubmit} className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-600 w-6 h-6 z-10" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-purple-600 w-5 h-5 sm:w-6 sm:h-6 z-10" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -887,7 +887,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                     setShowSearchSuggestions(true);
                   }
                 }}
-                className="w-full pl-12 pr-4 py-3.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-white/50 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-2xl text-lg"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-full bg-white/95 backdrop-blur-sm border-2 border-white/50 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 shadow-2xl text-base sm:text-lg"
               />
               
               {/* Search Suggestions Dropdown - Google Style */}
@@ -1013,12 +1013,12 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
           </div>
         </div>
         
-        <div className="container mx-auto max-w-7xl relative z-10">
-          <h2 className="text-4xl font-bold text-center mb-12 text-purple-900 drop-shadow-sm">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 relative z-10">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 text-purple-900 drop-shadow-sm">
             Browse Our Catalog
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {categories.map((category) => {
               const Icon = categoryIcons[category] || HomeIcon;
               const colorClass = categoryColors[category] || "from-purple-500 to-pink-500";
@@ -1047,16 +1047,16 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                     </div>
 
                     {/* Content */}
-                    <div className="relative z-10 p-6 min-h-[300px] flex flex-col">
+                    <div className="relative z-10 p-5 sm:p-6 min-h-[260px] sm:min-h-[300px] flex flex-col">
                       {/* Icon */}
                       <div className="mb-4">
-                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Icon className="w-8 h-8 text-white" />
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Icon className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                         </div>
                       </div>
 
                       {/* Category Name */}
-                      <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">
                         {category}
                       </h3>
 
@@ -1067,7 +1067,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
 
                       {/* Preview Image */}
                       {categorySubcategories.length > 0 && categorySubcategories[0].image && categorySubcategories[0].image.trim() !== "" && (
-                        <div className="mt-auto relative h-32 rounded-xl overflow-hidden border-2 border-white/30 shadow-lg">
+                        <div className="mt-auto relative h-28 sm:h-32 rounded-xl overflow-hidden border-2 border-white/30 shadow-lg">
                           <Image
                             src={categorySubcategories[0].image}
                             alt={categorySubcategories[0].name}
@@ -1100,8 +1100,8 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                         }
 
                         return (
-                          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-5 lg:p-6 -mt-2 relative z-0">
-                            <div className="flex items-center justify-between mb-5 pb-3 border-b border-purple-100">
+                          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-4 sm:p-5 lg:p-6 -mt-2 relative z-0">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5 pb-3 border-b border-purple-100">
                               <h3 className="text-xl md:text-2xl font-bold text-purple-800">
                                 {category} Subcategories
                               </h3>
@@ -1116,7 +1116,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                                 <span className="hidden sm:inline">Close</span>
                               </button>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                               {displaySubcategories.map((subcategory, index) => {
                                 const categorySlug = categorySlugs[category] || normalizeCategorySlug(category);
                                 const subcategorySlug = subcategory.slug;
@@ -1182,10 +1182,10 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
             {searchQuery.trim() && filteredProductsBySearch.length > 0 && (
               <div className="md:col-span-2 lg:col-span-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-purple-100/50 p-5 lg:p-6">
-                  <div className="flex items-center justify-between mb-5 pb-3 border-b border-purple-100">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5 pb-3 border-b border-purple-100">
                     <h3 className="text-xl md:text-2xl font-bold text-purple-800">
                       Search Results for "{searchQuery}"
-                      <span className="text-base font-normal text-gray-600 ml-2">
+                      <span className="block sm:inline text-sm sm:text-base font-normal text-gray-600 sm:ml-2">
                         ({filteredProductsBySearch.length} {filteredProductsBySearch.length === 1 ? 'product' : 'products'})
                       </span>
                     </h3>
@@ -1253,18 +1253,18 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-2xl"></div>
               </div>
               {/* Content */}
-              <div className="relative z-10 p-6 min-h-[300px] flex flex-col">
+              <div className="relative z-10 p-5 sm:p-6 min-h-[260px] sm:min-h-[300px] flex flex-col">
                 {/* Icon */}
                 <div className="mb-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Wand2 className="w-8 h-8 text-white" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Wand2 className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">Customizable Item</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 group-hover:translate-x-2 transition-transform">Customizable Item</h3>
                 <p className="text-white/80 text-sm mb-4">Create something unique with your message</p>
                 {/* Preview Icon instead of image */}
                 <div className="mt-auto flex justify-center">
-                  <span className="inline-flex items-center justify-center w-24 h-24 rounded-xl bg-white/20 text-white text-5xl shadow-lg">
+                  <span className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white/20 text-white text-5xl shadow-lg">
                     <Wand2 className="w-10 h-10" />
                   </span>
                 </div>
@@ -1277,8 +1277,8 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
 
           {/* --- Customizable Item Modal --- */}
           {showCustomModal && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
-              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative animate-fadeIn">
+            <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
+              <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-8 relative animate-fadeIn">
                 <button
                   onClick={() => setShowCustomModal(false)}
                   className="absolute top-4 right-6 text-gray-500 hover:text-purple-600 text-lg font-bold"
@@ -1286,9 +1286,9 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
                 >
                   ×
                 </button>
-                <h3 className="text-xl font-bold text-center mb-2 text-purple-700">Order a Customizable Item</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-center mb-2 text-purple-700">Order a Customizable Item</h3>
                 {/* WhatsApp opening explanation */}
-                <p className="text-[15px] text-gray-700 text-center mb-5">
+                <p className="text-sm sm:text-[15px] text-gray-700 text-center mb-5">
                   <b>After you submit, WhatsApp will open with all your details. Just press <span className="bg-green-100 text-green-900 px-1 rounded">Send</span> to place your order!</b>
                 </p>
                 <form
@@ -1493,7 +1493,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
           </div>
         </div>
 
-        <div className="container mx-auto max-w-6xl relative z-10">
+        <div className="container mx-auto max-w-6xl px-4 sm:px-6 relative z-10">
           {/* Main Card with Mehndi Border */}
           <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden">
             {/* Background Image for Container */}
@@ -1855,7 +1855,7 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
           </div>
         </div>
         
-        <div className="container mx-auto max-w-4xl relative z-10">
+        <div className="container mx-auto max-w-4xl px-4 sm:px-6 relative z-10">
           <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden">
             {/* Header Section with Gradient Background */}
             <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 px-8 py-6 text-white relative overflow-hidden">

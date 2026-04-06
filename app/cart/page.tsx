@@ -53,7 +53,7 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-20">
+      <div className="container mx-auto px-4 py-16 sm:py-20">
         <div className="text-center max-w-md mx-auto">
           <div className="relative mb-8">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-3xl opacity-30 rounded-full"></div>
@@ -78,12 +78,12 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
           Shopping Cart
         </h1>
-        <p className="text-gray-600 text-lg">Review your selected items</p>
+        <p className="text-gray-600 text-base sm:text-lg">Review your selected items</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -96,7 +96,7 @@ export default function CartPage() {
             return (
             <div
               key={`${item.productId}-${item.selectedSize?.id || 'no-size'}`}
-              className="group bg-white rounded-2xl shadow-xl p-6 flex flex-col sm:flex-row gap-6 border-2 border-purple-100 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] transform"
+              className="group bg-white rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 border-2 border-purple-100 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] transform"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Product Image */}
@@ -112,7 +112,7 @@ export default function CartPage() {
               </div>
 
               {/* Product Info */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-xl mb-2 text-gray-800 group-hover:text-purple-700 transition-colors">
                   {item.product.name}
                 </h3>
@@ -139,7 +139,7 @@ export default function CartPage() {
                 </p>
 
                 {/* Quantity Controls */}
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <div className="flex items-center gap-1 border-2 border-purple-200 rounded-xl overflow-hidden bg-white shadow-md">
                     <button
                       onClick={() =>
@@ -175,7 +175,7 @@ export default function CartPage() {
               </div>
 
               {/* Item Total */}
-              <div className="text-right sm:text-left sm:mt-0 mt-4">
+              <div className="mt-2 sm:mt-4 w-full sm:w-auto flex items-end justify-between sm:block sm:text-left">
                 <p className="text-sm text-gray-500 mb-1">Total</p>
                 <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {formatCurrency(itemTotal)}
@@ -188,7 +188,7 @@ export default function CartPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-6 sticky top-24 border-2 border-purple-200 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-5 sm:p-6 lg:sticky lg:top-24 border-2 border-purple-200 backdrop-blur-sm">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-1 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
                 Order Summary

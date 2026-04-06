@@ -389,6 +389,63 @@ export async function bulkUpdateInventory(
   }
 }
 
+/** Case-insensitive trim compare (avoids SQL ILIKE treating `_` and `%` as wildcards). */
+function normKey(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+/**
+ * Product IDs whose category matches (exact first, then case-insensitive).
+ */
+async function getProductIdsInCategory(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  categoryName: string
+): Promise<string[]> {
+  const { data: exact, error: e1 } = await supabase
+    .from("products")
+    .select("id")
+    .eq("category", categoryName);
+  if (e1) throw e1;
+  if (exact?.length) return exact.map((r) => r.id);
+
+  const { data: all, error: e2 } = await supabase.from("products").select("id, category");
+  if (e2) throw e2;
+  const want = normKey(categoryName);
+  return (all || []).filter((r) => normKey(r.category) === want).map((r) => r.id);
+}
+
+/**
+ * Product IDs in a category + subcategory (exact match first, then case-insensitive; no ILIKE wildcards).
+ */
+async function getProductIdsInCategorySubcategory(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  categoryName: string,
+  subcategoryName: string
+): Promise<string[]> {
+  const { data: exact, error: e1 } = await supabase
+    .from("products")
+    .select("id")
+    .eq("category", categoryName)
+    .eq("subcategory", subcategoryName);
+  if (e1) throw e1;
+  if (exact?.length) return exact.map((r) => r.id);
+
+  const { data: all, error: e2 } = await supabase
+    .from("products")
+    .select("id, category, subcategory");
+  if (e2) throw e2;
+  const cat = normKey(categoryName);
+  const sub = normKey(subcategoryName);
+  return (all || [])
+    .filter(
+      (r) =>
+        normKey(r.category) === cat &&
+        r.subcategory != null &&
+        normKey(r.subcategory) === sub
+    )
+    .map((r) => r.id);
+}
+
 /**
  * Admin Functions - Bulk update category (rename category)
  */
@@ -398,17 +455,18 @@ export async function bulkUpdateCategory(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
+    const ids = await getProductIdsInCategory(supabase, oldCategory);
+    if (ids.length === 0) return;
+
     const { error } = await supabase
-      .from('products')
+      .from("products")
       .update({
         category: newCategory,
         updated_at: new Date().toISOString(),
       })
-      .eq('category', oldCategory);
+      .in("id", ids);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   } catch (error) {
     console.error("Error bulk updating category:", error);
     throw error;
@@ -425,18 +483,22 @@ export async function bulkUpdateSubcategory(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
+    const ids = await getProductIdsInCategorySubcategory(
+      supabase,
+      categoryName,
+      oldSubcategory
+    );
+    if (ids.length === 0) return;
+
     const { error } = await supabase
       .from("products")
       .update({
         subcategory: newSubcategory,
         updated_at: new Date().toISOString(),
       })
-      .ilike("category", categoryName)
-      .ilike("subcategory", oldSubcategory);
+      .in("id", ids);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   } catch (error) {
     console.error("Error bulk updating subcategory:", error);
     throw error;
@@ -449,14 +511,12 @@ export async function bulkUpdateSubcategory(
 export async function deleteCategory(category: string): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .ilike('category', category);
+    const ids = await getProductIdsInCategory(supabase, category);
+    if (ids.length === 0) return;
 
-    if (error) {
-      throw error;
-    }
+    const { error } = await supabase.from("products").delete().in("id", ids);
+
+    if (error) throw error;
   } catch (error) {
     console.error("Error deleting category:", error);
     throw error;

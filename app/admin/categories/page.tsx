@@ -264,7 +264,9 @@ export default function CategoriesPage() {
       mutate();
     } catch (error) {
       console.error("Error updating category:", error);
-      toast.error("Failed to update category");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update category"
+      );
     }
   };
 
@@ -358,7 +360,9 @@ export default function CategoriesPage() {
       mutate();
     } catch (error) {
       console.error("Error updating subcategory:", error);
-      toast.error("Failed to update subcategory");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update subcategory"
+      );
     }
   };
 

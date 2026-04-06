@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingCart, Heart, Menu, X, Settings, Grid3x3, ChevronRight, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { getCartFromStorage, getCartItemCount } from "@/lib/utils/cart";
@@ -16,6 +17,7 @@ export default function Header() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
   const categoriesMenuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) => {
@@ -69,14 +71,22 @@ export default function Header() {
     };
   }, [categoriesMenuOpen]);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setCategoriesMenuOpen(false);
+  }, [pathname]);
+
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-purple-200/98 via-pink-200/98 to-purple-200/98 backdrop-blur-xl shadow-2xl border-b-2 border-purple-300/60">
       <div className="absolute inset-0 bg-gradient-to-r from-purple-400/10 via-pink-400/10 to-purple-400/10"></div>
-      <div className="container mx-auto px-4 relative">
-        <div className="flex items-center justify-between h-20">
+      <div className="container mx-auto px-3 sm:px-4 relative">
+        <div className="flex items-center justify-between gap-3 h-16 sm:h-20">
           {/* Logo */}
-          <Link href="/" className="group relative text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent hover:from-purple-600 hover:via-pink-500 hover:to-purple-600 transition-all duration-300 drop-shadow-lg hover:scale-105 transform">
-            <span className="relative z-10">{process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"}</span>
+          <Link
+            href="/"
+            className="group relative max-w-[13rem] sm:max-w-none truncate text-lg sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent hover:from-purple-600 hover:via-pink-500 hover:to-purple-600 transition-all duration-300 drop-shadow-lg hover:scale-105 transform"
+          >
+            <span className="relative z-10 truncate">{process.env.NEXT_PUBLIC_APP_NAME || "magi.cofresin"}</span>
             <span className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300"></span>
           </Link>
 
@@ -123,7 +133,7 @@ export default function Header() {
 
               {/* Categories Dropdown */}
               {categoriesMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 max-h-[80vh] overflow-y-auto bg-white rounded-xl shadow-2xl border-2 border-purple-200/60 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1rem))] max-h-[80vh] overflow-y-auto bg-white rounded-xl shadow-2xl border-2 border-purple-200/60 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                   <div className="p-4">
                     <h3 className="text-lg font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">
                       Shop by Categories
@@ -199,7 +209,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-purple-800 hover:text-purple-900 transition-colors"
+            className="md:hidden shrink-0 p-2 text-purple-800 hover:text-purple-900 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -213,7 +223,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden py-6 border-t-2 border-purple-300/60 bg-white/30 backdrop-blur-md animate-in slide-in-from-top duration-300">
+          <nav className="md:hidden max-h-[calc(100vh-4rem)] overflow-y-auto py-4 sm:py-6 border-t-2 border-purple-300/60 bg-white/30 backdrop-blur-md animate-in slide-in-from-top duration-300">
             <div className="flex flex-col gap-3">
               <Link
                 href="/"

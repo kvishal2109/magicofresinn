@@ -126,7 +126,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     <>
       <Link
         href={`/product/${product.id}`}
-        className="group relative bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 border-2 border-purple-100 hover:border-purple-400 hover:scale-[1.03] transform"
+        className="group relative bg-white rounded-2xl sm:rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 border-2 border-purple-100 hover:border-purple-400 hover:scale-[1.03] transform"
       >
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -192,7 +192,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Product Info */}
-        <div className="p-5 relative z-10 bg-white/95 backdrop-blur-sm group-hover:bg-white transition-colors duration-300">
+        <div className="p-4 sm:p-5 relative z-10 bg-white/95 backdrop-blur-sm group-hover:bg-white transition-colors duration-300">
           <p className="text-gray-700 text-sm mb-4 line-clamp-2 font-medium leading-relaxed group-hover:text-gray-900 transition-colors">
             {product.description}
           </p>
@@ -204,10 +204,10 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-700 group-hover:via-pink-700 group-hover:to-purple-700 transition-all duration-300">
+                <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent group-hover:from-purple-700 group-hover:via-pink-700 group-hover:to-purple-700 transition-all duration-300">
                   {formatCurrency(displayPrice)}
                 </span>
                 {displayOriginalPrice && (
@@ -220,7 +220,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {inventoryDetailText}
               </p>
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 self-stretch sm:self-auto">
               <button
                 onClick={handleWishlistToggle}
                 className={`p-2.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 ${
@@ -252,7 +252,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Size Selector Modal */}
       {showSizeSelector && hasSizes && productSizes && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md max-h-[90vh] overflow-y-auto w-full shadow-2xl">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Select Size</h3>
             <SizeSelector
               sizes={productSizes}

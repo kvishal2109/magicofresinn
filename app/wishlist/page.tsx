@@ -92,7 +92,7 @@ export default function WishlistPage() {
 
   if (wishlistIds.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-20">
+      <div className="container mx-auto px-4 py-16 sm:py-20">
         <div className="text-center max-w-md mx-auto">
           <div className="relative mb-8">
             <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-rose-400 blur-3xl opacity-30 rounded-full"></div>
@@ -119,30 +119,30 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-10 space-y-4">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <div className="mb-8 sm:mb-10 space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Heart className="w-8 h-8 text-pink-500 fill-pink-500" />
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-700 via-rose-600 to-pink-700 bg-clip-text text-transparent">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-700 via-rose-600 to-pink-700 bg-clip-text text-transparent">
                 My Wishlist
               </h1>
             </div>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-base sm:text-lg">
               {products.length} {products.length === 1 ? "item" : "items"} you love
             </p>
           </div>
           <button
             onClick={handleMoveAllToCart}
             disabled={products.length === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-600 via-rose-600 to-pink-600 px-6 py-3 text-white font-semibold shadow-lg hover:from-pink-700 hover:via-rose-700 hover:to-pink-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-600 via-rose-600 to-pink-600 px-6 py-3 text-white font-semibold shadow-lg hover:from-pink-700 hover:via-rose-700 hover:to-pink-700 transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingCart className="w-5 h-5" />
             Move all to cart
           </button>
         </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/70 p-4 text-sm text-pink-900">
+        <div className="flex items-start gap-3 rounded-2xl border border-pink-100 bg-pink-50/70 p-4 text-sm text-pink-900">
           <Sparkles className="w-5 h-5 text-pink-500" />
           <span>
             Low-stock & price-drop badges highlight products most likely to sell out or go back to full price soon.
@@ -201,17 +201,17 @@ function WishlistItemCard({ product, onMoveToCart }: WishlistItemCardProps) {
         )}
         <ProductCard product={product} />
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={() => onMoveToCart(product)}
-          className="min-w-[140px] flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-sm font-semibold text-pink-700 hover:border-pink-400 hover:bg-pink-50 transition"
+          className="w-full sm:min-w-[140px] flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-sm font-semibold text-pink-700 hover:border-pink-400 hover:bg-pink-50 transition"
         >
           <ShoppingCart className="w-4 h-4" />
           Move to cart
         </button>
         <Link
           href={similarLink}
-          className="min-w-[140px] flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-700 hover:to-pink-700 transition"
+          className="w-full sm:min-w-[140px] flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-700 hover:to-pink-700 transition"
         >
           Buy similar
         </Link>

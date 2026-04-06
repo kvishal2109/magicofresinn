@@ -19,6 +19,10 @@
   --color-foreground: var(--foreground);
 }
 
+html {
+  overflow-x: hidden;
+}
+
 /* Soft Lavender Purple Textured Background */
 body {
   background: 
@@ -54,6 +58,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* Additional soft texture overlay */
@@ -76,6 +81,7 @@ body::before {
 main {
   position: relative;
   z-index: 1;
+  overflow-x: clip;
 }
 
 /* Decorative patterns */
@@ -216,6 +222,12 @@ button, a, input, textarea, select {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 /* Gradient text animation */

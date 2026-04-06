@@ -160,18 +160,18 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent">
           Checkout
         </h1>
-        <p className="text-gray-600 text-lg">Complete your order details</p>
+        <p className="text-gray-600 text-base sm:text-lg">Complete your order details</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-8 space-y-6 border-2 border-purple-200 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-5 sm:p-8 space-y-6 border-2 border-purple-200 backdrop-blur-sm">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
                 Shipping Information
@@ -312,7 +312,7 @@ export default function CheckoutPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-6 sticky top-24 border-2 border-purple-200 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-2xl p-5 sm:p-6 lg:sticky lg:top-24 border-2 border-purple-200 backdrop-blur-sm">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-1 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
                 Order Summary
@@ -374,7 +374,7 @@ export default function CheckoutPage() {
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     placeholder="Enter coupon code"
@@ -390,7 +390,7 @@ export default function CheckoutPage() {
                   />
                   <button
                     onClick={handleApplyCoupon}
-                    className="px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transform duration-300"
+                    className="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all font-bold text-sm shadow-lg hover:shadow-xl hover:scale-105 transform duration-300"
                   >
                     Apply
                   </button>

@@ -19,10 +19,10 @@ export default function SubcategoryProductsClient({
   const router = useRouter();
 
   return (
-    <div className="min-h-screen py-12 px-4">
+    <div className="min-h-screen py-8 sm:py-12 px-4">
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8 sm:mb-12">
           <button
             onClick={() => router.back()}
             className="mb-6 flex items-center gap-2 text-purple-800 hover:text-purple-900 transition-all duration-300 font-semibold group hover:scale-105"
@@ -30,11 +30,11 @@ export default function SubcategoryProductsClient({
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span>Back</span>
           </button>
-          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-8 border-2 border-purple-200 shadow-xl backdrop-blur-sm">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-3">
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-5 sm:p-8 border-2 border-purple-200 shadow-xl backdrop-blur-sm">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-3">
               {subcategoryName}
             </h1>
-            <div className="flex items-center gap-2 text-gray-600 text-lg">
+            <div className="flex flex-wrap items-center gap-2 text-gray-600 text-sm sm:text-lg">
               <span className="font-semibold text-purple-700">{categoryName}</span>
               <span>•</span>
               <span className="font-medium">{products.length} {products.length === 1 ? 'product' : 'products'}</span>

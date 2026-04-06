@@ -80,7 +80,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
   const displayOriginalPrice = selectedSize && product.originalPrice ? product.originalPrice + selectedSize.priceModifier : product.originalPrice;
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-8 sm:py-12">
       <Link
         href="/"
         className="inline-flex items-center gap-2 text-gray-600 hover:text-purple-600 mb-8 font-semibold group transition-all duration-300 hover:scale-105"
@@ -89,7 +89,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         <span>Back to Products</span>
       </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Product Image */}
         <div className="relative aspect-square bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50 rounded-2xl overflow-hidden border-2 border-purple-200 shadow-2xl group">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-400/0 via-pink-400/0 to-purple-400/0 group-hover:from-purple-400/10 group-hover:via-pink-400/10 group-hover:to-purple-400/10 transition-all duration-500 blur-2xl"></div>
@@ -102,34 +102,34 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             priority
           />
           {discount > 0 && (
-            <div className="absolute top-6 left-6 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white px-5 py-2 rounded-full text-base font-bold shadow-2xl border-2 border-white/50 z-20 animate-pulse">
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white px-4 sm:px-5 py-2 rounded-full text-sm sm:text-base font-bold shadow-2xl border-2 border-white/50 z-20 animate-pulse">
               <span className="relative z-10">{discount}% OFF</span>
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full blur-sm opacity-75 -z-10"></div>
             </div>
           )}
           {hasSizes && (
-            <div className="absolute top-6 right-6 bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg z-20">
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg z-20">
               Multiple Sizes Available
             </div>
           )}
         </div>
 
         {/* Product Info - No name, just description */}
-        <div className="space-y-8">
-          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-6 border-2 border-purple-200 shadow-xl">
-            <p className="text-xl text-gray-800 leading-relaxed font-medium">{product.description}</p>
+        <div className="space-y-6 sm:space-y-8">
+          <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-5 sm:p-6 border-2 border-purple-200 shadow-xl">
+            <p className="text-lg sm:text-xl text-gray-800 leading-relaxed font-medium">{product.description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
               {formatCurrency(displayPrice)}
             </span>
             {displayOriginalPrice && (
               <>
-                <span className="text-2xl text-gray-400 line-through font-semibold">
+                <span className="text-xl sm:text-2xl text-gray-400 line-through font-semibold">
                   {formatCurrency(displayOriginalPrice)}
                 </span>
-                <span className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-4 py-2 rounded-xl text-sm font-bold border-2 border-amber-300 shadow-md">
+                <span className="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border-2 border-amber-300 shadow-md">
                   💰 Save {formatCurrency(displayOriginalPrice - displayPrice)}
                 </span>
               </>
@@ -160,7 +160,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
           {/* Size Selector */}
           {hasSizes && productSizes && (
-            <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-6 border-2 border-purple-200 shadow-xl">
+            <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-5 sm:p-6 border-2 border-purple-200 shadow-xl">
               <SizeSelector
                 sizes={productSizes}
                 selectedSize={selectedSize}
@@ -172,7 +172,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
           {/* Quantity Selector */}
           {product.inStock && (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <label className="font-bold text-gray-700 text-lg">Quantity:</label>
               <div className="flex items-center gap-1 border-2 border-purple-200 rounded-xl overflow-hidden bg-white shadow-md">
                 <button
@@ -182,7 +182,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 >
                   <span className="w-5 h-5 flex items-center justify-center">-</span>
                 </button>
-                <span className="px-6 py-3 font-bold text-lg min-w-[4rem] text-center bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700">
+                <span className="px-5 sm:px-6 py-3 font-bold text-lg min-w-[4rem] text-center bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700">
                   {quantity}
                 </span>
                 <button
@@ -197,7 +197,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={handleAddToCart}
               disabled={!product.inStock || (hasSizes && !selectedSize)}
@@ -208,7 +208,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             </button>
             <button
               onClick={handleWishlistToggle}
-              className={`p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 ${
+              className={`w-full sm:w-auto flex items-center justify-center p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 ${
                 inWishlist
                   ? "border-pink-500 bg-gradient-to-r from-pink-500 to-rose-500 text-white animate-pulse"
                   : "border-purple-200 hover:border-pink-400 text-gray-600 hover:text-pink-500 hover:bg-pink-50"

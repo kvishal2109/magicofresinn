@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from "./client";
 
+function normKey(s: string): string {
+  return s.trim().toLowerCase();
+}
+
 export interface CategoriesMetadata {
   categories: Record<string, { name: string; image?: string }>;
   subcategories: Record<string, { categoryName: string; subcategoryName: string; image?: string }>;
@@ -91,31 +95,29 @@ export async function updateCategoryImage(categoryName: string, imageUrl: string
   try {
     const supabase = getSupabaseAdmin();
 
-    // Check if exists
-    const { data: existing } = await supabase
-      .from('categories_metadata')
-      .select('id')
-      .eq('category_name', categoryName)
-      .is('subcategory_name', null)
-      .single();
+    const { data: catRows, error: selErr } = await supabase
+      .from("categories_metadata")
+      .select("id, category_name")
+      .is("subcategory_name", null);
+
+    if (selErr) throw selErr;
+
+    const want = normKey(categoryName);
+    const existing = (catRows || []).find((r) => normKey(r.category_name) === want);
 
     if (existing) {
-      // Update
       const { error } = await supabase
-        .from('categories_metadata')
+        .from("categories_metadata")
         .update({ image: imageUrl })
-        .eq('id', existing.id);
+        .eq("id", existing.id);
 
       if (error) throw error;
     } else {
-      // Insert
-      const { error } = await supabase
-        .from('categories_metadata')
-        .insert({
-          category_name: categoryName,
-          subcategory_name: null,
-          image: imageUrl,
-        });
+      const { error } = await supabase.from("categories_metadata").insert({
+        category_name: categoryName.trim(),
+        subcategory_name: null,
+        image: imageUrl,
+      });
 
       if (error) throw error;
     }
@@ -136,31 +138,35 @@ export async function updateSubcategoryImage(
   try {
     const supabase = getSupabaseAdmin();
 
-    // Check if exists
-    const { data: existing } = await supabase
-      .from('categories_metadata')
-      .select('id')
-      .eq('category_name', categoryName)
-      .eq('subcategory_name', subcategoryName)
-      .single();
+    const { data: subRows, error: selErr } = await supabase
+      .from("categories_metadata")
+      .select("id, category_name, subcategory_name")
+      .not("subcategory_name", "is", null);
+
+    if (selErr) throw selErr;
+
+    const cat = normKey(categoryName);
+    const sub = normKey(subcategoryName);
+    const existing = (subRows || []).find(
+      (r) =>
+        r.subcategory_name &&
+        normKey(r.category_name) === cat &&
+        normKey(r.subcategory_name) === sub
+    );
 
     if (existing) {
-      // Update
       const { error } = await supabase
-        .from('categories_metadata')
+        .from("categories_metadata")
         .update({ image: imageUrl })
-        .eq('id', existing.id);
+        .eq("id", existing.id);
 
       if (error) throw error;
     } else {
-      // Insert
-      const { error } = await supabase
-        .from('categories_metadata')
-        .insert({
-          category_name: categoryName,
-          subcategory_name: subcategoryName,
-          image: imageUrl,
-        });
+      const { error } = await supabase.from("categories_metadata").insert({
+        category_name: categoryName.trim(),
+        subcategory_name: subcategoryName.trim(),
+        image: imageUrl,
+      });
 
       if (error) throw error;
     }
@@ -176,12 +182,21 @@ export async function updateSubcategoryImage(
 export async function deleteCategoryMetadata(categoryName: string): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
+    const { data: rows, error: selErr } = await supabase
       .from("categories_metadata")
-      .delete()
-      .eq("category_name", categoryName);
+      .select("id, category_name");
 
-    if (error) throw error;
+    if (selErr) throw selErr;
+
+    const want = normKey(categoryName);
+    const ids = (rows || [])
+      .filter((r) => normKey(r.category_name) === want)
+      .map((r) => r.id);
+
+    for (const id of ids) {
+      const { error } = await supabase.from("categories_metadata").delete().eq("id", id);
+      if (error) throw error;
+    }
   } catch (error) {
     console.error("Error deleting category metadata:", error);
     throw error;
@@ -197,12 +212,24 @@ export async function renameCategoryMetadata(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
+    const { data: rows, error: selErr } = await supabase
       .from("categories_metadata")
-      .update({ category_name: newCategoryName })
-      .eq("category_name", oldCategoryName);
+      .select("id, category_name");
 
-    if (error) throw error;
+    if (selErr) throw selErr;
+
+    const want = normKey(oldCategoryName);
+    const ids = (rows || [])
+      .filter((r) => normKey(r.category_name) === want)
+      .map((r) => r.id);
+
+    for (const id of ids) {
+      const { error } = await supabase
+        .from("categories_metadata")
+        .update({ category_name: newCategoryName })
+        .eq("id", id);
+      if (error) throw error;
+    }
   } catch (error) {
     console.error("Error renaming category metadata:", error);
     throw error;
@@ -219,13 +246,40 @@ export async function renameSubcategoryMetadata(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
+    const { data: rows, error: selErr } = await supabase
+      .from("categories_metadata")
+      .select("id, category_name, subcategory_name")
+      .not("subcategory_name", "is", null);
+
+    if (selErr) throw selErr;
+
+    const cat = normKey(categoryName);
+    const oldSub = normKey(oldSubcategoryName);
+
+    const row = (rows || []).find(
+      (r) =>
+        r.subcategory_name &&
+        normKey(r.category_name) === cat &&
+        normKey(r.subcategory_name) === oldSub
+    );
+
+    if (!row) {
+      return;
+    }
+
     const { error } = await supabase
       .from("categories_metadata")
       .update({ subcategory_name: newSubcategoryName })
-      .eq("category_name", categoryName)
-      .eq("subcategory_name", oldSubcategoryName);
+      .eq("id", row.id);
 
-    if (error) throw error;
+    if (error) {
+      if ((error as { code?: string }).code === "23505") {
+        throw new Error(
+          "A subcategory with that name already exists in this category."
+        );
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Error renaming subcategory metadata:", error);
     throw error;
@@ -241,11 +295,25 @@ export async function deleteSubcategoryMetadata(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
+    const { data: rows, error: selErr } = await supabase
       .from("categories_metadata")
-      .delete()
-      .eq("category_name", categoryName)
-      .eq("subcategory_name", subcategoryName);
+      .select("id, category_name, subcategory_name")
+      .not("subcategory_name", "is", null);
+
+    if (selErr) throw selErr;
+
+    const cat = normKey(categoryName);
+    const sub = normKey(subcategoryName);
+    const row = (rows || []).find(
+      (r) =>
+        r.subcategory_name &&
+        normKey(r.category_name) === cat &&
+        normKey(r.subcategory_name) === sub
+    );
+
+    if (!row) return;
+
+    const { error } = await supabase.from("categories_metadata").delete().eq("id", row.id);
 
     if (error) throw error;
   } catch (error) {
