@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Product } from "@/types";
+import { Product, Catalog } from "@/types";
 import ImageUpload from "./ImageUpload";
 import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 import toast from "react-hot-toast";
@@ -36,6 +36,8 @@ export default function ProductForm({
     images: [] as string[],
     category: "",
     subcategory: "",
+    catalogId: "",
+    catalogName: "",
     inStock: true,
     stock: "",
   });
@@ -47,6 +49,7 @@ export default function ProductForm({
     categories: {},
     subcategories: {},
   });
+  const [catalogs, setCatalogs] = useState<Catalog[]>([]);
 
   // Load admin categories metadata so empty categories/subcategories are available in the product form
   useEffect(() => {
@@ -61,6 +64,34 @@ export default function ProductForm({
         console.warn("Could not fetch categories metadata for product form:", error);
       });
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch("/api/catalogs")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        if (data?.success && Array.isArray(data.catalogs)) {
+          setCatalogs(data.catalogs);
+        }
+      })
+      .catch((error) => {
+        console.warn("Could not fetch catalogs for product form:", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!formData.catalogId || formData.catalogName) return;
+    const match = catalogs.find((catalog) => catalog.id === formData.catalogId);
+    if (match) {
+      setFormData((prev) => ({ ...prev, catalogName: match.name }));
+    }
+  }, [catalogs, formData.catalogId, formData.catalogName]);
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -138,6 +169,8 @@ export default function ProductForm({
         images: product.images || [],
         category: product.category || "",
         subcategory: product.subcategory || "",
+        catalogId: product.catalogId || "",
+        catalogName: product.catalogName || "",
         inStock: product.inStock ?? true,
         stock: product.stock?.toString() || "",
       });
@@ -189,6 +222,16 @@ export default function ProductForm({
     });
   };
 
+  const handleCatalogChange = (value: string) => {
+    const selectedCatalog = catalogs.find((catalog) => catalog.id === value);
+    const name = value ? selectedCatalog?.name || "" : "";
+    setFormData((prev) => ({
+      ...prev,
+      catalogId: value,
+      catalogName: name,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -196,6 +239,14 @@ export default function ProductForm({
     try {
       const trimmedCategory = formData.category.trim();
       const trimmedSubcategory = formData.subcategory.trim();
+      const trimmedCatalogId = formData.catalogId ? formData.catalogId.trim() : "";
+      const selectedCatalog =
+        trimmedCatalogId && catalogs.length
+          ? catalogs.find((catalog) => catalog.id === trimmedCatalogId)
+          : undefined;
+      const submitCatalogName = trimmedCatalogId
+        ? selectedCatalog?.name || formData.catalogName || undefined
+        : undefined;
 
       // Validate that at least one image is provided
       const primaryImage = formData.images[0] || formData.image;
@@ -217,6 +268,8 @@ export default function ProductForm({
         ...formData,
         category: trimmedCategory,
         subcategory: trimmedSubcategory || undefined,
+        catalogId: trimmedCatalogId || undefined,
+        catalogName: submitCatalogName,
         price: priceValue,
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
@@ -366,6 +419,34 @@ export default function ProductForm({
               </div>
             )}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Catalog
+          </label>
+          <select
+            value={formData.catalogId}
+            onChange={(e) => handleCatalogChange(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Assign to catalog (optional)</option>
+            {catalogs.map((catalog) => (
+              <option key={catalog.id} value={catalog.id}>
+                {catalog.name}
+              </option>
+            ))}
+          </select>
+          {catalogs.length === 0 && (
+            <p className="text-xs text-gray-500 mt-1">Loading catalogs…</p>
+          )}
+          {formData.catalogId &&
+            !catalogs.find((catalog) => catalog.id === formData.catalogId) &&
+            formData.catalogName && (
+              <p className="text-xs text-gray-500 mt-1">
+                Using catalog name: {formData.catalogName}
+              </p>
+            )}
         </div>
 
         <div>

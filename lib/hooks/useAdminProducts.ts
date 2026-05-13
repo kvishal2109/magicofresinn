@@ -39,11 +39,10 @@ export function useAdminProducts(config?: SWRConfiguration<Product[]>) {
     return swr.mutate(
       async () => {
         const response = await fetch('/api/admin/products', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
           throw new Error(payload.error || "Failed to load products");
         }
-        const payload = await response.json();
         return payload.products || [];
       },
       { revalidate: true }
