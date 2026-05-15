@@ -81,6 +81,40 @@ function HomeClientContent({ initialProducts, initialCategories, initialCategori
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<string[]>(initialCategories);
   const [categoriesMetadata, setCategoriesMetadata] = useState<CategoriesMetadata>(initialCategoriesMetadata);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadLatestCategories = async () => {
+      try {
+        const response = await fetch("/api/categories", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to refresh categories");
+        }
+        const data = await response.json();
+        if (isActive && data?.success && Array.isArray(data.categories)) {
+          setCategories(data.categories);
+        }
+      } catch (error) {
+        console.error("Unable to refresh categories:", error);
+      }
+    };
+
+    loadLatestCategories();
+
+    const handleFocus = () => {
+      loadLatestCategories();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      isActive = false;
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
   
   // Debug: Log products on mount to verify data
   useEffect(() => {
