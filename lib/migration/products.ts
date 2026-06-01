@@ -1,10 +1,6 @@
 import { Product } from "@/types";
 import * as SupabaseProducts from "@/lib/supabase/products";
-import { cloudinary } from "@/lib/cloudinary/client";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { hardcodedProducts } from "@/lib/data/products";
-import { subcategories as staticSubcategories } from "@/lib/data/subcategories";
-import * as CategoriesStorage from "@/lib/supabase/categories";
 
 // Dynamically import blob storage to handle cases where it might not be available
 async function getProductsBlob(): Promise<any[]> {
@@ -18,90 +14,6 @@ async function getProductsBlob(): Promise<any[]> {
     }
     throw error;
   }
-}
-
-/**
- * Check if an image URL is already on Cloudinary
- */
-function isCloudinaryUrl(url: string): boolean {
-  return url.includes('cloudinary.com') || url.includes('res.cloudinary.com');
-}
-
-/**
- * Upload an image from a URL to Cloudinary
- */
-async function uploadImageFromUrl(
-  imageUrl: string,
-  productId: string,
-  imageIndex: number = 0
-): Promise<string> {
-  try {
-    // If already on Cloudinary, return as-is
-    if (isCloudinaryUrl(imageUrl)) {
-      console.log(`Image ${imageUrl} is already on Cloudinary, skipping upload`);
-      return imageUrl;
-    }
-
-    // Fetch the image
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const fileName = `product-${productId}-${imageIndex}-${Date.now()}`;
-
-    // Upload to Cloudinary
-    const result = await new Promise<any>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            folder: `resin-store/products`,
-            public_id: fileName,
-            resource_type: 'image',
-            transformation: [
-              { quality: 'auto' },
-              { fetch_format: 'auto' },
-            ],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        )
-        .end(buffer);
-    });
-
-    console.log(`Uploaded image ${imageUrl} to Cloudinary: ${result.secure_url}`);
-    return result.secure_url;
-  } catch (error) {
-    console.error(`Error uploading image ${imageUrl} to Cloudinary:`, error);
-    // Return original URL if upload fails
-    return imageUrl;
-  }
-}
-
-/**
- * Migrate product images to Cloudinary
- */
-async function migrateProductImages(product: Product): Promise<{
-  image: string;
-  images: string[];
-}> {
-  const migratedImage = await uploadImageFromUrl(product.image, product.id, 0);
-  
-  const migratedImages: string[] = [];
-  if (product.images && product.images.length > 0) {
-    for (let i = 0; i < product.images.length; i++) {
-      const migrated = await uploadImageFromUrl(product.images[i], product.id, i + 1);
-      migratedImages.push(migrated);
-    }
-  }
-
-  return {
-    image: migratedImage,
-    images: migratedImages,
-  };
 }
 
 /**
@@ -122,9 +34,8 @@ async function productExistsInSupabase(productId: string): Promise<boolean> {
 export async function migrateProduct(
   product: Product,
   options: {
-    migrateImages: boolean;
     skipExisting: boolean;
-  } = { migrateImages: true, skipExisting: true }
+  } = { skipExisting: true }
 ): Promise<{ success: boolean; productId: string; message: string }> {
   try {
     // Check if product already exists
@@ -139,15 +50,8 @@ export async function migrateProduct(
       }
     }
 
-    // Migrate images if requested
-    let image = product.image;
-    let images = product.images || [];
-    
-    if (options.migrateImages) {
-      const migrated = await migrateProductImages(product);
-      image = migrated.image;
-      images = migrated.images;
-    }
+    const image = product.image;
+    const images = product.images || [];
 
     // Prepare product data for Supabase
     const productData: Omit<Product, "id" | "createdAt" | "updatedAt"> = {
@@ -222,38 +126,13 @@ export async function migrateProduct(
 }
 
 /**
- * Seed category and subcategory metadata so admin/home can render empty or newly restored catalog areas
- */
-async function seedCatalogMetadata(categoryNames: string[]): Promise<void> {
-  const uniqueCategoryNames = [...new Set(categoryNames.filter(Boolean))];
-
-  for (const categoryName of uniqueCategoryNames) {
-    await CategoriesStorage.updateCategoryImage(categoryName, null);
-
-    const subcategoryEntries =
-      staticSubcategories[categoryName as keyof typeof staticSubcategories] || [];
-
-    for (const subcategory of subcategoryEntries) {
-      await CategoriesStorage.updateSubcategoryImage(
-        categoryName,
-        subcategory.name,
-        subcategory.image || null
-      );
-    }
-  }
-}
-
-/**
  * Migrate all products from blob storage to Supabase
  */
 export async function migrateAllProducts(options: {
-  migrateImages: boolean;
   skipExisting: boolean;
   batchSize?: number;
-  source?: "blob" | "hardcoded";
-  category?: string;
+  source?: "blob";
 } = {
-  migrateImages: true,
   skipExisting: true,
   batchSize: 10,
   source: "blob",
@@ -268,19 +147,15 @@ export async function migrateAllProducts(options: {
     const source = options.source || "blob";
     let sourceProducts: any[];
 
-    if (source === "hardcoded") {
-      sourceProducts = hardcodedProducts;
-    } else {
-      try {
-        sourceProducts = await getProductsBlob();
-      } catch (error: any) {
-        if (error.message?.includes("Can't resolve '@vercel/blob'") || 
-            error.message?.includes("Cannot find module") ||
-            error.message?.includes("not available")) {
-          throw new Error("Blob storage is not available. Please ensure @vercel/blob is installed and BLOB_READ_WRITE_TOKEN is configured in your environment variables.");
-        }
-        throw error;
+    try {
+      sourceProducts = await getProductsBlob();
+    } catch (error: any) {
+      if (error.message?.includes("Can't resolve '@vercel/blob'") || 
+          error.message?.includes("Cannot find module") ||
+          error.message?.includes("not available")) {
+        throw new Error("Blob storage is not available. Please ensure @vercel/blob is installed and BLOB_READ_WRITE_TOKEN is configured in your environment variables.");
       }
+      throw error;
     }
 
     if (!sourceProducts || sourceProducts.length === 0) {
@@ -293,30 +168,11 @@ export async function migrateAllProducts(options: {
       };
     }
 
-    let products: Product[] = sourceProducts.map((p: any) => ({
+    const products: Product[] = sourceProducts.map((p: any) => ({
       ...p,
       createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
       updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
     }));
-
-    if (options.category) {
-      const normalizedCategory = options.category.trim().toLowerCase();
-      products = products.filter(
-        (product) => product.category?.trim().toLowerCase() === normalizedCategory
-      );
-    }
-
-    if (products.length === 0) {
-      return {
-        total: 0,
-        successful: 0,
-        failed: 0,
-        skipped: 0,
-        results: [],
-      };
-    }
-
-    await seedCatalogMetadata(products.map((product) => product.category));
 
     const results: Array<{ productId: string; success: boolean; message: string }> = [];
     let successful = 0;

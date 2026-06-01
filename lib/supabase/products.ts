@@ -1,6 +1,5 @@
 import { Product } from "@/types";
 import { getSupabaseAdmin, isSupabaseConfigured } from "./client";
-import { hardcodedProducts } from "@/lib/data/products";
 import { getCategoriesMetadata } from "./categories";
 
 /**
@@ -10,8 +9,8 @@ import { getCategoriesMetadata } from "./categories";
 export async function getAllProducts(): Promise<Product[]> {
   // If Supabase is not configured, use hardcoded products
   if (!isSupabaseConfigured()) {
-    console.log("Supabase not configured, using hardcoded products");
-    return hardcodedProducts;
+    console.log("Supabase not configured, returning empty product list");
+    return [];
   }
 
   try {
@@ -23,13 +22,13 @@ export async function getAllProducts(): Promise<Product[]> {
 
     if (error) {
       console.error("Error fetching products from Supabase:", error);
-      console.log("Falling back to hardcoded products");
-      return hardcodedProducts;
+      console.log("Falling back to empty product list");
+      return [];
     }
 
     if (!data || data.length === 0) {
-      console.log("No products in database, using hardcoded products");
-      return hardcodedProducts;
+      console.log("No products in database");
+      return [];
     }
 
     console.log(`Found ${data.length} products in database`);
@@ -56,8 +55,8 @@ export async function getAllProducts(): Promise<Product[]> {
 
     return products;
   } catch (error) {
-    console.error("Error fetching products from Supabase, using hardcoded:", error);
-    return hardcodedProducts;
+    console.error("Error fetching products from Supabase:", error);
+    return [];
   }
 }
 
@@ -70,7 +69,7 @@ export async function getProductById(id: string): Promise<Product | null> {
     return products.find((p) => p.id === id) || null;
   } catch (error) {
     console.error("Error fetching product by ID:", error);
-    return hardcodedProducts.find((p) => p.id === id) || null;
+    return null;
   }
 }
 
@@ -162,39 +161,26 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
  * Get all categories
  */
 export async function getAllCategories(): Promise<string[]> {
-  const standardCategories = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-  
   try {
     const [products, categoriesMetadata] = await Promise.all([
       getAllProducts(),
       getCategoriesMetadata(),
     ]);
-    
-    // Get categories from products
-    const productCategories = products && products.length > 0 
+
+    const productCategories = products && products.length > 0
       ? [...new Set(products.map((p) => p.category).filter(Boolean))]
       : [];
 
-    // Get categories that were created in admin metadata (with or without products)
     const metadataCategories = [
       ...Object.keys(categoriesMetadata.categories || {}),
       ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
     ].filter(Boolean);
-    
-    // Combine categories from products and admin-managed metadata.
-    const allCategories = new Set([
-      ...productCategories,
-      ...metadataCategories,
-    ]);
-    
-    // Keep familiar ordering when these categories exist, but do not force them in.
-    const orderedCategories = standardCategories.filter(cat => allCategories.has(cat));
-    const remainingCategories = Array.from(allCategories).filter(cat => !standardCategories.includes(cat));
-    
-    return [...orderedCategories, ...remainingCategories];
+
+    const allCategories = [...new Set([...productCategories, ...metadataCategories])];
+    return allCategories.sort((a, b) => a.localeCompare(b));
   } catch (error) {
-    console.error("Error fetching categories, using hardcoded fallback:", error);
-    return [...new Set(hardcodedProducts.map((product) => product.category).filter(Boolean))];
+    console.error("Error fetching categories:", error);
+    return [];
   }
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import { uploadImage } from "@/lib/cloudinary/client";
+import { uploadImage } from "@/lib/blob/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,17 +12,11 @@ export async function POST(request: NextRequest) {
     const folder = (formData.get("folder") as string) || "products";
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json(
-        { error: "File must be an image" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File must be an image" }, { status: 400 });
     }
 
     const { url } = await uploadImage(file, folder);

@@ -89,11 +89,7 @@ export default function CategoriesPage() {
       categoryMap.get(sub.categoryName)?.add(sub.subcategoryName);
     });
 
-    const preferredOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-    const ordered = preferredOrder.filter((cat) => categoryMap.has(cat));
-    const remaining = Array.from(categoryMap.keys()).filter((cat) => !preferredOrder.includes(cat));
-
-    return [...ordered, ...remaining].map((name) => {
+    return Array.from(categoryMap.keys()).sort((a, b) => a.localeCompare(b)).map((name) => {
       const subcategoryNames = Array.from(categoryMap.get(name) || []).sort();
       const subcategoriesWithImages = subcategoryNames.map((subName) => {
         const key = `${name}::${subName}`;

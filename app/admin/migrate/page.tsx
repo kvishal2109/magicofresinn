@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 interface MigrationStatus {
   blobStorage: { count: number };
-  hardcodedCatalog: { count: number };
   supabase: { count: number };
   migrationNeeded: boolean;
 }
@@ -28,9 +27,7 @@ export default function MigratePage() {
   const [migrating, setMigrating] = useState(false);
   const [result, setResult] = useState<MigrationResult | null>(null);
   const [options, setOptions] = useState({
-    source: "blob" as "blob" | "hardcoded",
-    category: "all",
-    migrateImages: true,
+    source: "blob" as "blob",
     skipExisting: true,
     batchSize: 10,
   });
@@ -90,7 +87,7 @@ export default function MigratePage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Product Migration</h1>
         <p className="text-gray-600 mt-1">
-          Migrate products from Blob Storage or the built-in catalog to Supabase
+          Migrate products from Blob Storage to Supabase
         </p>
       </div>
 
@@ -109,22 +106,13 @@ export default function MigratePage() {
         </div>
 
         {status ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Database className="w-5 h-5 text-blue-600" />
                 <span className="text-sm font-medium text-gray-600">Blob Storage</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">{status.blobStorage.count}</p>
-              <p className="text-xs text-gray-500 mt-1">products</p>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-600">Built-in Catalog</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{status.hardcodedCatalog.count}</p>
               <p className="text-xs text-gray-500 mt-1">products</p>
             </div>
 
@@ -151,7 +139,7 @@ export default function MigratePage() {
               </p>
               {status.migrationNeeded && (
                 <p className="text-xs text-orange-600 mt-1">
-                  {Math.max(status.blobStorage.count, status.hardcodedCatalog.count) - status.supabase.count} products to migrate
+                  {status.blobStorage.count - status.supabase.count} products to migrate
                 </p>
               )}
             </div>
@@ -178,53 +166,14 @@ export default function MigratePage() {
                 onChange={(e) =>
                   setOptions((current) => ({
                     ...current,
-                    source: e.target.value as "blob" | "hardcoded",
-                    migrateImages: e.target.value === "hardcoded" ? false : current.migrateImages,
+                    source: e.target.value as "blob",
                   }))
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="blob">Blob Storage</option>
-                <option value="hardcoded">Built-in Catalog</option>
               </select>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Category
-              </label>
-              <select
-                value={options.category}
-                onChange={(e) => setOptions({ ...options, category: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="all">All Categories</option>
-                <option value="Wedding">Wedding</option>
-                <option value="Jewellery">Jewellery</option>
-                <option value="Home Decor">Home Decor</option>
-                <option value="Furniture">Furniture</option>
-              </select>
-            </div>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={options.migrateImages}
-                onChange={(e) =>
-                  setOptions({ ...options, migrateImages: e.target.checked })
-                }
-                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                disabled={options.source === "hardcoded"}
-              />
-              <div>
-                <span className="text-sm font-medium text-gray-900">
-                  Migrate Images to Cloudinary
-                </span>
-                <p className="text-xs text-gray-500">
-                  Upload product images to Cloudinary (images already on Cloudinary will be skipped)
-                </p>
-              </div>
-            </label>
 
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -354,8 +303,7 @@ export default function MigratePage() {
         <h3 className="text-sm font-semibold text-blue-900 mb-2">Migration Information</h3>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
           <li>Products will be migrated from Vercel Blob Storage to Supabase</li>
-          <li>You can also seed the built-in catalog directly into Supabase, including just the Wedding category.</li>
-          <li>Product images will be uploaded to Cloudinary (if enabled)</li>
+          <li>Product image URLs from the source are preserved as-is during migration</li>
           <li>Product IDs, timestamps, and all metadata will be preserved</li>
           <li>Existing products in Supabase will be skipped (if enabled)</li>
           <li>The migration process may take several minutes depending on the number of products</li>

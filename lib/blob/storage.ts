@@ -238,6 +238,40 @@ export async function saveOrdersBlob(orders: any[]): Promise<void> {
 }
 
 /**
+ * Upload an image file to Vercel Blob storage (public URL).
+ */
+export async function uploadImage(
+  file: File | Buffer,
+  folder: string = "products"
+): Promise<{ url: string }> {
+  let buffer: Buffer;
+  let contentType = "image/jpeg";
+  let extension = "jpg";
+
+  if (file instanceof File) {
+    const arrayBuffer = await file.arrayBuffer();
+    buffer = Buffer.from(arrayBuffer);
+    contentType = file.type || contentType;
+    const namePart = file.name.split(".").pop();
+    if (namePart) extension = namePart.toLowerCase();
+  } else {
+    buffer = file;
+  }
+
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const blobPath = `${BLOB_STORE_PREFIX}/${folder}/${timestamp}-${randomString}.${extension}`;
+
+  const { url } = await put(blobPath, buffer, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+  });
+
+  return { url };
+}
+
+/**
  * Image Upload - Generate upload URL for client-side upload
  * Returns a URL that the client can POST to directly
  */

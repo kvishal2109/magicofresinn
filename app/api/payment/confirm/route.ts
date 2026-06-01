@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrderPaymentStatus } from "@/lib/supabase/orders";
-import { uploadImage } from "@/lib/cloudinary/client";
+import { uploadImage } from "@/lib/blob/storage";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 
 export async function POST(request: NextRequest) {

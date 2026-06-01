@@ -113,15 +113,7 @@ export default function ProductForm({
     );
     if (product?.category) addCategory(product.category);
 
-    const unique = Array.from(categoryMap.values());
-    const preferredOrder = ["Wedding", "Jewellery", "Home Decor", "Furniture"];
-    const ordered = preferredOrder.filter((cat) =>
-      unique.some((item) => normalize(item) === normalize(cat))
-    );
-    const remaining = unique.filter(
-      (cat) => !preferredOrder.some((preferred) => normalize(preferred) === normalize(cat))
-    );
-    return [...ordered, ...remaining];
+    return Array.from(categoryMap.values()).sort((a, b) => a.localeCompare(b));
   }, [products, product, categoriesMetadata]);
 
   // Extract subcategories for selected category

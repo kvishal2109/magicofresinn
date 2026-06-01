@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import SubcategoryProductsClient from "@/components/products/SubcategoryProductsClient";
 import { getAllProducts } from "@/lib/supabase/products";
 import { getCategoriesMetadata } from "@/lib/supabase/categories";
-import { getCategoryNameFromSlug, getSubcategoryNameFromSlug } from "@/lib/data/categoryMaps";
+import { toSlug } from "@/lib/data/categoryMaps";
 
 export const revalidate = 300;
 
@@ -12,17 +12,14 @@ interface PageParams {
 }
 
 const normalize = (value: string) => value.trim().toLowerCase();
-const toSlug = (value: string) => value.trim().toLowerCase().replace(/\s+/g, "-");
 
 export default async function SubcategoryProductsPage({
   params,
 }: {
   params: Promise<PageParams>;
 }) {
-  // Await params in Next.js 16+
   const resolvedParams = await params;
-  
-  // Defensive check for params
+
   if (!resolvedParams?.category || !resolvedParams?.subcategory) {
     notFound();
   }
@@ -38,14 +35,9 @@ export default async function SubcategoryProductsPage({
     ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
   ].filter(Boolean);
 
-  const allCategoryNames = [...new Set([
-    ...productCategoryNames,
-    ...metadataCategoryNames,
-  ])];
+  const allCategoryNames = [...new Set([...productCategoryNames, ...metadataCategoryNames])];
 
-  const categoryName =
-    getCategoryNameFromSlug(resolvedParams.category) ||
-    allCategoryNames.find((name) => toSlug(name) === resolvedParams.category);
+  const categoryName = allCategoryNames.find((name) => toSlug(name) === resolvedParams.category);
 
   if (!categoryName) {
     notFound();
@@ -58,20 +50,11 @@ export default async function SubcategoryProductsPage({
     .filter((sub) => normalize(sub.categoryName) === normalize(categoryName))
     .map((sub) => sub.subcategoryName);
 
-  const allSubcategoryNames = [...new Set([
-    ...productSubcategoryNames,
-    ...metadataSubcategoryNames,
-  ])];
+  const allSubcategoryNames = [...new Set([...productSubcategoryNames, ...metadataSubcategoryNames])];
 
-  const slugMatchedSubcategory = allSubcategoryNames.find(
+  const subcategoryName = allSubcategoryNames.find(
     (name) => toSlug(name) === resolvedParams.subcategory
   );
-  const mappedSubcategoryFromStatic = getSubcategoryNameFromSlug(resolvedParams.subcategory);
-  const mappedSubcategoryInCategory = mappedSubcategoryFromStatic
-    ? allSubcategoryNames.find((name) => normalize(name) === normalize(mappedSubcategoryFromStatic))
-    : undefined;
-
-  const subcategoryName = slugMatchedSubcategory || mappedSubcategoryInCategory;
 
   if (!subcategoryName) {
     notFound();

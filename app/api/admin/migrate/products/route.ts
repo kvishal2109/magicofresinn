@@ -9,24 +9,19 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const {
-      migrateImages = true,
       skipExisting = true,
       batchSize = 10,
-      source = "blob",
-      category,
     } = body;
 
     console.log("Starting product migration from blob storage to Supabase...");
     console.log(
-      `Options: source=${source}, category=${category || "all"}, migrateImages=${migrateImages}, skipExisting=${skipExisting}, batchSize=${batchSize}`
+      `Options: skipExisting=${skipExisting}, batchSize=${batchSize}`
     );
 
     const result = await migrateAllProducts({
-      migrateImages: Boolean(migrateImages),
       skipExisting: Boolean(skipExisting),
       batchSize: Number(batchSize) || 10,
-      source: source === "hardcoded" ? "hardcoded" : "blob",
-      category: category && category !== "all" ? category : undefined,
+      source: "blob",
     });
 
     console.log("Migration completed:", {
@@ -53,37 +48,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET endpoint to check migration status
- */
 export async function GET(request: NextRequest) {
   try {
     const authError = await requireAuth(request);
     if (authError) return authError;
 
-    // Get counts from both sources
     let blobCount = 0;
-    let hardcodedCount = 0;
     let supabaseCount = 0;
-    
+
     try {
-      const [blobProducts, hardcodedProducts, supabaseProducts] = await Promise.all([
-        import("@/lib/blob/products").then(m => m.getAllProducts()).catch(() => []),
-        import("@/lib/data/products").then(m => m.hardcodedProducts).catch(() => []),
-        import("@/lib/supabase/products").then(m => m.getAllProducts()).catch(() => []),
+      const [blobProducts, supabaseProducts] = await Promise.all([
+        import("@/lib/blob/products").then((m) => m.getAllProducts()).catch(() => []),
+        import("@/lib/supabase/products").then((m) => m.getAllProducts()).catch(() => []),
       ]);
       blobCount = Array.isArray(blobProducts) ? blobProducts.length : 0;
-      hardcodedCount = Array.isArray(hardcodedProducts) ? hardcodedProducts.length : 0;
       supabaseCount = Array.isArray(supabaseProducts) ? supabaseProducts.length : 0;
     } catch (error: any) {
-      // If blob storage is not available, only get Supabase count
-      if (error.message?.includes("Can't resolve '@vercel/blob'") || 
-          error.message?.includes("Cannot find module")) {
+      if (
+        error.message?.includes("Can't resolve '@vercel/blob'") ||
+        error.message?.includes("Cannot find module")
+      ) {
         try {
-          const supabaseProducts = await import("@/lib/supabase/products").then(m => m.getAllProducts());
+          const supabaseProducts = await import("@/lib/supabase/products").then((m) => m.getAllProducts());
           supabaseCount = Array.isArray(supabaseProducts) ? supabaseProducts.length : 0;
-          const hardcodedProducts = await import("@/lib/data/products").then(m => m.hardcodedProducts);
-          hardcodedCount = Array.isArray(hardcodedProducts) ? hardcodedProducts.length : 0;
         } catch (e) {
           console.error("Error fetching Supabase products:", e);
         }
@@ -96,15 +83,12 @@ export async function GET(request: NextRequest) {
       success: true,
       blobStorage: {
         count: blobCount,
-        available: blobCount >= 0, // Will be 0 if not available
-      },
-      hardcodedCatalog: {
-        count: hardcodedCount,
+        available: blobCount >= 0,
       },
       supabase: {
         count: supabaseCount,
       },
-      migrationNeeded: Math.max(blobCount, hardcodedCount) > supabaseCount,
+      migrationNeeded: blobCount > supabaseCount,
     });
   } catch (error: any) {
     console.error("Error checking migration status:", error);
@@ -117,4 +101,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
