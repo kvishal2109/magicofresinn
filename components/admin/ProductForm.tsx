@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Product, Catalog } from "@/types";
 import ImageUpload from "./ImageUpload";
-import { useAdminProducts } from "@/lib/hooks/useAdminProducts";
 import toast from "react-hot-toast";
+import type { DbCategory, DbSubcategory } from "@/lib/supabase/catalog-types";
 
 interface ProductFormProps {
   product?: Product;
@@ -12,20 +12,12 @@ interface ProductFormProps {
   onCancel?: () => void;
 }
 
-interface CategoriesMetadata {
-  categories: Record<string, { name: string; image?: string }>;
-  subcategories: Record<string, { categoryName: string; subcategoryName: string; image?: string }>;
-}
-
-const normalize = (value: string) => value.trim().toLowerCase();
-
 export default function ProductForm({
   product,
   onSubmit,
   onCancel,
 }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
-  const { products } = useAdminProducts();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -34,44 +26,34 @@ export default function ProductForm({
     discount: "",
     image: "",
     images: [] as string[],
-    category: "",
-    subcategory: "",
+    categoryId: "",
+    subcategoryId: "",
     catalogId: "",
     catalogName: "",
     inStock: true,
     stock: "",
   });
-  const [showCustomCategory, setShowCustomCategory] = useState(false);
-  const [showCustomSubcategory, setShowCustomSubcategory] = useState(false);
-  const [customCategoryInput, setCustomCategoryInput] = useState("");
-  const [customSubcategoryInput, setCustomSubcategoryInput] = useState("");
-  const [categoriesMetadata, setCategoriesMetadata] = useState<CategoriesMetadata>({
-    categories: {},
-    subcategories: {},
-  });
+  const [categories, setCategories] = useState<DbCategory[]>([]);
+  const [subcategories, setSubcategories] = useState<DbSubcategory[]>([]);
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
 
-  // Load admin categories metadata so empty categories/subcategories are available in the product form
   useEffect(() => {
-    fetch("/api/admin/categories/metadata")
+    fetch("/api/admin/categories-v2")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.success && data.metadata) {
-          setCategoriesMetadata(data.metadata);
+        if (data?.success && Array.isArray(data.categories)) {
+          setCategories(data.categories.filter((c: DbCategory) => c.is_active));
         }
       })
       .catch((error) => {
-        console.warn("Could not fetch categories metadata for product form:", error);
+        console.warn("Could not fetch categories for product form:", error);
       });
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
     fetch("/api/catalogs")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!isMounted) return;
         if (data?.success && Array.isArray(data.catalogs)) {
           setCatalogs(data.catalogs);
         }
@@ -79,11 +61,25 @@ export default function ProductForm({
       .catch((error) => {
         console.warn("Could not fetch catalogs for product form:", error);
       });
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    if (!formData.categoryId) {
+      setSubcategories([]);
+      return;
+    }
+
+    fetch(`/api/admin/subcategories?categoryId=${formData.categoryId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.subcategories)) {
+          setSubcategories(data.subcategories.filter((s: DbSubcategory) => s.is_active));
+        }
+      })
+      .catch((error) => {
+        console.warn("Could not fetch subcategories for product form:", error);
+      });
+  }, [formData.categoryId]);
 
   useEffect(() => {
     if (!formData.catalogId || formData.catalogName) return;
@@ -93,90 +89,45 @@ export default function ProductForm({
     }
   }, [catalogs, formData.catalogId, formData.catalogName]);
 
-  // Extract unique categories
-  const categories = useMemo(() => {
-    const categoryMap = new Map<string, string>();
-    const addCategory = (name?: string | null) => {
-      if (!name) return;
-      const trimmed = name.trim();
-      if (!trimmed) return;
-      const key = normalize(trimmed);
-      if (!categoryMap.has(key)) {
-        categoryMap.set(key, trimmed);
+  useEffect(() => {
+    if (!product) return;
+
+    setFormData({
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price?.toString() || "",
+      originalPrice: product.originalPrice?.toString() || "",
+      discount: product.discount?.toString() || "",
+      image: product.image || "",
+      images: product.images || [],
+      categoryId: product.categoryId || "",
+      subcategoryId: product.subcategoryId || "",
+      catalogId: product.catalogId || "",
+      catalogName: product.catalogName || "",
+      inStock: product.inStock ?? true,
+      stock: product.stock?.toString() || "",
+    });
+
+    if (!product.categoryId && product.category && categories.length > 0) {
+      const match = categories.find(
+        (c) => c.name.trim().toLowerCase() === product.category.trim().toLowerCase()
+      );
+      if (match) {
+        setFormData((prev) => ({ ...prev, categoryId: match.id }));
       }
-    };
-
-    products.forEach((p) => addCategory(p.category));
-    Object.keys(categoriesMetadata.categories || {}).forEach((cat) => addCategory(cat));
-    Object.values(categoriesMetadata.subcategories || {}).forEach((sub) =>
-      addCategory(sub.categoryName)
-    );
-    if (product?.category) addCategory(product.category);
-
-    return Array.from(categoryMap.values()).sort((a, b) => a.localeCompare(b));
-  }, [products, product, categoriesMetadata]);
-
-  // Extract subcategories for selected category
-  const subcategories = useMemo(() => {
-    if (!formData.category) return [];
-    const subcategoryMap = new Map<string, string>();
-    const addSubcategory = (name?: string | null) => {
-      if (!name) return;
-      const trimmed = name.trim();
-      if (!trimmed) return;
-      const key = normalize(trimmed);
-      if (!subcategoryMap.has(key)) {
-        subcategoryMap.set(key, trimmed);
-      }
-    };
-
-    products
-      .filter((p) => normalize(p.category) === normalize(formData.category))
-      .forEach((p) => addSubcategory(p.subcategory));
-
-    Object.values(categoriesMetadata.subcategories || {})
-      .filter((sub) => normalize(sub.categoryName) === normalize(formData.category))
-      .forEach((sub) => addSubcategory(sub.subcategoryName));
-
-    if (
-      product?.subcategory &&
-      product.category &&
-      normalize(product.category) === normalize(formData.category)
-    ) {
-      addSubcategory(product.subcategory);
     }
-
-    return Array.from(subcategoryMap.values()).sort((a, b) => a.localeCompare(b));
-  }, [products, formData.category, product, categoriesMetadata]);
+  }, [product, categories]);
 
   useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name || "",
-        description: product.description || "",
-        price: product.price?.toString() || "",
-        originalPrice: product.originalPrice?.toString() || "",
-        discount: product.discount?.toString() || "",
-        image: product.image || "",
-        images: product.images || [],
-        category: product.category || "",
-        subcategory: product.subcategory || "",
-        catalogId: product.catalogId || "",
-        catalogName: product.catalogName || "",
-        inStock: product.inStock ?? true,
-        stock: product.stock?.toString() || "",
-      });
+    if (!product?.subcategoryId && product?.subcategory && subcategories.length > 0) {
+      const match = subcategories.find(
+        (s) => s.name.trim().toLowerCase() === (product.subcategory || "").trim().toLowerCase()
+      );
+      if (match) {
+        setFormData((prev) => ({ ...prev, subcategoryId: match.id }));
+      }
     }
-  }, [product]);
-
-  // Reset subcategory when category changes
-  useEffect(() => {
-    if (formData.category && !product) {
-      setFormData((prev) => ({ ...prev, subcategory: "" }));
-      setShowCustomSubcategory(false);
-      setCustomSubcategoryInput("");
-    }
-  }, [formData.category, product]);
+  }, [product, subcategories]);
 
   const formatNumber = (value: number) => {
     if (!Number.isFinite(value)) return "";
@@ -224,13 +175,21 @@ export default function ProductForm({
     }));
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      categoryId,
+      subcategoryId: "",
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const trimmedCategory = formData.category.trim();
-      const trimmedSubcategory = formData.subcategory.trim();
+      const selectedCategory = categories.find((c) => c.id === formData.categoryId);
+      const selectedSubcategory = subcategories.find((s) => s.id === formData.subcategoryId);
       const trimmedCatalogId = formData.catalogId ? formData.catalogId.trim() : "";
       const selectedCatalog =
         trimmedCatalogId && catalogs.length
@@ -240,7 +199,12 @@ export default function ProductForm({
         ? selectedCatalog?.name || formData.catalogName || undefined
         : undefined;
 
-      // Validate that at least one image is provided
+      if (!formData.categoryId || !selectedCategory) {
+        toast.error("Please select a category");
+        setLoading(false);
+        return;
+      }
+
       const primaryImage = formData.images[0] || formData.image;
       if (!primaryImage || primaryImage.trim() === "") {
         toast.error("Please upload at least one product image");
@@ -248,7 +212,6 @@ export default function ProductForm({
         return;
       }
 
-      // Ensure price is always a valid number
       const priceValue = formData.price ? Number(formData.price) : 0;
       if (isNaN(priceValue) || priceValue < 0) {
         toast.error("Please enter a valid price");
@@ -257,20 +220,27 @@ export default function ProductForm({
       }
 
       const submitData = {
-        ...formData,
-        category: trimmedCategory,
-        subcategory: trimmedSubcategory || undefined,
+        name: formData.name,
+        description: formData.description,
+        category: selectedCategory.name,
+        subcategory: selectedSubcategory?.name || undefined,
+        categoryId: formData.categoryId,
+        subcategoryId: formData.subcategoryId || undefined,
         catalogId: trimmedCatalogId || undefined,
         catalogName: submitCatalogName,
         price: priceValue,
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
         stock: formData.stock ? Number(formData.stock) : undefined,
+        inStock: formData.inStock,
         image: primaryImage,
-        images: formData.images.length > 0 ? formData.images : (formData.image ? [formData.image] : []),
+        images:
+          formData.images.length > 0
+            ? formData.images
+            : formData.image
+              ? [formData.image]
+              : [],
       };
-
-      console.log("Submitting product data:", submitData);
 
       await onSubmit(submitData);
     } catch (error) {
@@ -300,117 +270,45 @@ export default function ProductForm({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Category *
           </label>
-          <div className="space-y-2">
-            {!showCustomCategory ? (
-              <select
-                value={formData.category}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "__custom__") {
-                    setShowCustomCategory(true);
-                    setCustomCategoryInput("");
-                    setFormData({ ...formData, category: "" });
-                  } else {
-                    setFormData({ ...formData, category: value });
-                  }
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-                <option value="__custom__">+ Add New Category</option>
-              </select>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customCategoryInput}
-                  onChange={(e) => {
-                    setCustomCategoryInput(e.target.value);
-                    setFormData({ ...formData, category: e.target.value });
-                  }}
-                  placeholder="Enter new category name"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCustomCategory(false);
-                    setCustomCategoryInput("");
-                    setFormData({ ...formData, category: "" });
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          >
+            <option value="">Select a category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          {categories.length === 0 && (
+            <p className="text-xs text-gray-500 mt-1">
+              No categories yet. Add them from Admin → Categories.
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Subcategory
           </label>
-          <div className="space-y-2">
-            {!showCustomSubcategory ? (
-              <select
-                value={formData.subcategory || ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "__custom__") {
-                    setShowCustomSubcategory(true);
-                    setCustomSubcategoryInput("");
-                    setFormData({ ...formData, subcategory: "" });
-                  } else {
-                    setFormData({ ...formData, subcategory: value || "" });
-                  }
-                }}
-                disabled={!formData.category}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">No subcategory</option>
-                {subcategories.map((subcat) => (
-                  <option key={subcat} value={subcat}>
-                    {subcat}
-                  </option>
-                ))}
-                {formData.category && <option value="__custom__">+ Add New Subcategory</option>}
-              </select>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customSubcategoryInput}
-                  onChange={(e) => {
-                    setCustomSubcategoryInput(e.target.value);
-                    setFormData({ ...formData, subcategory: e.target.value });
-                  }}
-                  placeholder="Enter new subcategory name"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCustomSubcategory(false);
-                    setCustomSubcategoryInput("");
-                    setFormData({ ...formData, subcategory: "" });
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
+          <select
+            value={formData.subcategoryId || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, subcategoryId: e.target.value || "" })
+            }
+            disabled={!formData.categoryId}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">No subcategory</option>
+            {subcategories.map((sub) => (
+              <option key={sub.id} value={sub.id}>
+                {sub.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -429,16 +327,6 @@ export default function ProductForm({
               </option>
             ))}
           </select>
-          {catalogs.length === 0 && (
-            <p className="text-xs text-gray-500 mt-1">Loading catalogs…</p>
-          )}
-          {formData.catalogId &&
-            !catalogs.find((catalog) => catalog.id === formData.catalogId) &&
-            formData.catalogName && (
-              <p className="text-xs text-gray-500 mt-1">
-                Using catalog name: {formData.catalogName}
-              </p>
-            )}
         </div>
 
         <div>
@@ -555,4 +443,3 @@ export default function ProductForm({
     </form>
   );
 }
-

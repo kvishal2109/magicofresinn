@@ -35,7 +35,7 @@ export default function ImageUpload({
 
     try {
       const uploadPromises = filesToUpload.map(async (file) => {
-        // Upload directly to Vercel Blob via server endpoint
+        // Upload to Supabase Storage via server endpoint
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", "products");

@@ -167,3 +167,6 @@ INSERT INTO admin_auth (password_hash)
 VALUES ('admin123')
 ON CONFLICT DO NOTHING;
 
+-- Dynamic catalog tables: run lib/supabase/migrations/catalog-v2.sql in SQL Editor
+-- (creates catalogs, categories, subcategories, product FKs, and store-images bucket)
+

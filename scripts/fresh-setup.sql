@@ -1,0 +1,196 @@
+-- ============================================
+-- FRESH SUPABASE SETUP (build from scratch)
+-- ============================================
+-- Run AFTER scripts/reset-supabase.sql (or on a brand-new project)
+-- Paste into Supabase SQL Editor → Run
+
+-- --------------------------------------------
+-- Core tables
+-- --------------------------------------------
+
+CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  original_price DECIMAL(10,2),
+  discount DECIMAL(5,2),
+  image TEXT,
+  images TEXT[],
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  category_id TEXT,
+  subcategory_id TEXT,
+  in_stock BOOLEAN DEFAULT true,
+  stock INTEGER,
+  catalog_id TEXT,
+  catalog_name TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE size_configurations (
+  id SERIAL PRIMARY KEY,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  size_id TEXT NOT NULL,
+  size_label TEXT NOT NULL,
+  dimensions TEXT NOT NULL,
+  price_modifier DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(product_id, size_id)
+);
+
+CREATE TABLE orders (
+  id TEXT PRIMARY KEY,
+  order_number TEXT UNIQUE NOT NULL,
+  customer JSONB NOT NULL,
+  items JSONB NOT NULL,
+  subtotal DECIMAL(10,2) NOT NULL,
+  discount DECIMAL(10,2) DEFAULT 0,
+  coupon_code TEXT,
+  total_amount DECIMAL(10,2) NOT NULL,
+  payment_status TEXT DEFAULT 'pending',
+  order_status TEXT DEFAULT 'pending',
+  payment_id TEXT,
+  utr_number TEXT,
+  payment_proof_url TEXT,
+  payment_submitted_at TIMESTAMP,
+  verified_amount DECIMAL(10,2),
+  verified_at TIMESTAMP,
+  verified_by TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE admin_auth (
+  id SERIAL PRIMARY KEY,
+  password_hash TEXT NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE coupons (
+  id TEXT PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percentage', 'fixed')),
+  discount_value DECIMAL(10,2) NOT NULL,
+  min_purchase DECIMAL(10,2),
+  max_discount DECIMAL(10,2),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- --------------------------------------------
+-- Dynamic catalog (categories & subcategories)
+-- --------------------------------------------
+
+CREATE TABLE catalogs (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  description TEXT,
+  cover_image_url TEXT,
+  pdf_url TEXT,
+  type TEXT DEFAULT 'collection',
+  is_active BOOLEAN DEFAULT true,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE categories (
+  id TEXT PRIMARY KEY,
+  catalog_id TEXT REFERENCES catalogs(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_categories_catalog_slug
+  ON categories (catalog_id, slug)
+  WHERE catalog_id IS NOT NULL;
+
+CREATE UNIQUE INDEX idx_categories_global_slug
+  ON categories (slug)
+  WHERE catalog_id IS NULL;
+
+CREATE TABLE subcategories (
+  id TEXT PRIMARY KEY,
+  category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (category_id, slug)
+);
+
+-- Product FK constraints (after catalog tables exist)
+ALTER TABLE products
+  ADD CONSTRAINT products_category_id_fkey
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
+
+ALTER TABLE products
+  ADD CONSTRAINT products_subcategory_id_fkey
+  FOREIGN KEY (subcategory_id) REFERENCES subcategories(id) ON DELETE SET NULL;
+
+-- --------------------------------------------
+-- Indexes
+-- --------------------------------------------
+
+CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX idx_products_category_id ON products(category_id);
+CREATE INDEX idx_products_subcategory_id ON products(subcategory_id);
+CREATE INDEX idx_size_configurations_product_id ON size_configurations(product_id);
+CREATE INDEX idx_categories_catalog_id ON categories(catalog_id);
+CREATE INDEX idx_categories_sort ON categories(sort_order);
+CREATE INDEX idx_subcategories_category_id ON subcategories(category_id);
+CREATE INDEX idx_orders_status ON orders(order_status);
+CREATE INDEX idx_orders_created_at ON orders(created_at);
+CREATE INDEX idx_orders_payment_status ON orders(payment_status);
+CREATE UNIQUE INDEX idx_coupons_code ON coupons(code);
+
+-- --------------------------------------------
+-- Storage bucket (public read for storefront images)
+-- --------------------------------------------
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('store-images', 'store-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'Public read store-images'
+  ) THEN
+    CREATE POLICY "Public read store-images"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'store-images');
+  END IF;
+END $$;
+
+-- --------------------------------------------
+-- Seed data (optional — edit or remove as needed)
+-- --------------------------------------------
+
+-- Default admin login password (must match ADMIN_PASSWORD in .env.local)
+INSERT INTO admin_auth (password_hash) VALUES ('shruti123');
+
+-- Starter coupons (manage from Admin → Coupons)
+INSERT INTO coupons (id, code, discount_type, discount_value, min_purchase, max_discount, is_active) VALUES
+  ('c_welcome10', 'WELCOME10', 'percentage', 10, 500, 200, true),
+  ('c_save20', 'SAVE20', 'percentage', 20, 1000, 500, true),
+  ('c_flat100', 'FLAT100', 'fixed', 100, 500, NULL, true),
+  ('c_flat500', 'FLAT500', 'fixed', 500, 2000, NULL, true),
+  ('c_newuser', 'NEWUSER', 'percentage', 15, 0, 300, true)
+ON CONFLICT (code) DO NOTHING;

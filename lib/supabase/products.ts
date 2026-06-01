@@ -1,6 +1,6 @@
 import { Product } from "@/types";
 import { getSupabaseAdmin, isSupabaseConfigured } from "./client";
-import { getCategoriesMetadata } from "./categories";
+import { listCategories } from "./catalog-db";
 
 /**
  * Get all products from Supabase
@@ -45,6 +45,8 @@ export async function getAllProducts(): Promise<Product[]> {
       images: row.images || [],
       category: row.category,
       subcategory: row.subcategory || undefined,
+      categoryId: row.category_id || undefined,
+      subcategoryId: row.subcategory_id || undefined,
       inStock: row.in_stock ?? true,
       stock: row.stock || undefined,
       catalogId: row.catalog_id || undefined,
@@ -101,6 +103,8 @@ export async function getProductsByCategory(category: string): Promise<Product[]
       images: row.images || [],
       category: row.category,
       subcategory: row.subcategory || undefined,
+      categoryId: row.category_id || undefined,
+      subcategoryId: row.subcategory_id || undefined,
       inStock: row.in_stock ?? true,
       stock: row.stock || undefined,
       catalogId: row.catalog_id || undefined,
@@ -143,6 +147,8 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
       images: row.images || [],
       category: row.category,
       subcategory: row.subcategory || undefined,
+      categoryId: row.category_id || undefined,
+      subcategoryId: row.subcategory_id || undefined,
       inStock: row.in_stock ?? true,
       stock: row.stock || undefined,
       catalogId: row.catalog_id || undefined,
@@ -162,22 +168,11 @@ export async function getProductsByCatalog(catalogId: string): Promise<Product[]
  */
 export async function getAllCategories(): Promise<string[]> {
   try {
-    const [products, categoriesMetadata] = await Promise.all([
-      getAllProducts(),
-      getCategoriesMetadata(),
-    ]);
-
-    const productCategories = products && products.length > 0
-      ? [...new Set(products.map((p) => p.category).filter(Boolean))]
-      : [];
-
-    const metadataCategories = [
-      ...Object.keys(categoriesMetadata.categories || {}),
-      ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
-    ].filter(Boolean);
-
-    const allCategories = [...new Set([...productCategories, ...metadataCategories])];
-    return allCategories.sort((a, b) => a.localeCompare(b));
+    const categories = await listCategories(false);
+    return categories
+      .filter((c) => c.is_active)
+      .map((c) => c.name)
+      .sort((a, b) => a.localeCompare(b));
   } catch (error) {
     console.error("Error fetching categories:", error);
     return [];
@@ -207,6 +202,8 @@ export async function createProduct(
         images: productData.images || [],
         category: productData.category,
         subcategory: productData.subcategory || null,
+        category_id: productData.categoryId || null,
+        subcategory_id: productData.subcategoryId || null,
         in_stock: productData.inStock ?? true,
         stock: productData.stock || null,
         catalog_id: productData.catalogId || null,
@@ -265,6 +262,8 @@ export async function updateProduct(
     if (updates.images !== undefined) updateData.images = updates.images;
     if (updates.category !== undefined) updateData.category = updates.category;
     if (updates.subcategory !== undefined) updateData.subcategory = updates.subcategory;
+    if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
+    if (updates.subcategoryId !== undefined) updateData.subcategory_id = updates.subcategoryId;
     if (updates.inStock !== undefined) updateData.in_stock = updates.inStock;
     if (updates.stock !== undefined) updateData.stock = updates.stock;
     if (updates.catalogId !== undefined) updateData.catalog_id = updates.catalogId;

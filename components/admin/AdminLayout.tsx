@@ -13,8 +13,8 @@ import {
   LogOut,
   Menu,
   X,
-  Database,
   Ticket,
+  BookOpen,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -123,8 +123,8 @@ export default function AdminLayout({
     { href: "/admin/prices", label: "Prices", icon: IndianRupee },
     { href: "/admin/coupons", label: "Coupons", icon: Ticket },
     { href: "/admin/categories", label: "Categories", icon: Tag },
+    { href: "/admin/catalogs", label: "Catalogs", icon: BookOpen },
     { href: "/admin/sizes", label: "Size Charts", icon: Tag },
-    { href: "/admin/migrate", label: "Migration", icon: Database },
   ];
 
 

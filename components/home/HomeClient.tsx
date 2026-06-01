@@ -6,6 +6,7 @@ import { Search, ArrowRight, MapPin, MessageCircle, Youtube, Instagram, ChevronL
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import CouponBanner from "@/components/CouponBanner";
+import CatalogBrowse from "@/components/home/CatalogBrowse";
 
 type CatalogState = {
   searchQuery: string;
@@ -723,7 +724,9 @@ function HomeClientContent({ initialProducts }: HomeClientProps) {
             Browse Our Catalog
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <CatalogBrowse />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8">
             {/* Search Results Section */}
             {searchQuery.trim() && filteredProductsBySearch.length > 0 && (
               <div className="md:col-span-2 lg:col-span-4 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">

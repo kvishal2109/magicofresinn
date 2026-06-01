@@ -48,6 +48,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.public.blob.vercel-storage.com",
       },
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+      },
     ],
   },
   // Note: Source map warnings in console are harmless and don't affect functionality

@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import SubcategoryProductsClient from "@/components/products/SubcategoryProductsClient";
 import { getAllProducts } from "@/lib/supabase/products";
-import { getCategoriesMetadata } from "@/lib/supabase/categories";
-import { toSlug } from "@/lib/data/categoryMaps";
+import { resolveCategorySubcategoryBySlugs } from "@/lib/supabase/catalog-db";
 
 export const revalidate = 300;
 
@@ -24,53 +23,31 @@ export default async function SubcategoryProductsPage({
     notFound();
   }
 
-  const [allProducts, categoriesMetadata] = await Promise.all([
-    getAllProducts(),
-    getCategoriesMetadata(),
-  ]);
-
-  const productCategoryNames = allProducts.map((product) => product.category).filter(Boolean);
-  const metadataCategoryNames = [
-    ...Object.keys(categoriesMetadata.categories || {}),
-    ...Object.values(categoriesMetadata.subcategories || {}).map((sub) => sub.categoryName),
-  ].filter(Boolean);
-
-  const allCategoryNames = [...new Set([...productCategoryNames, ...metadataCategoryNames])];
-
-  const categoryName = allCategoryNames.find((name) => toSlug(name) === resolvedParams.category);
-
-  if (!categoryName) {
-    notFound();
-  }
-
-  const productSubcategoryNames = allProducts
-    .filter((product) => normalize(product.category) === normalize(categoryName) && product.subcategory)
-    .map((product) => product.subcategory as string);
-  const metadataSubcategoryNames = Object.values(categoriesMetadata.subcategories || {})
-    .filter((sub) => normalize(sub.categoryName) === normalize(categoryName))
-    .map((sub) => sub.subcategoryName);
-
-  const allSubcategoryNames = [...new Set([...productSubcategoryNames, ...metadataSubcategoryNames])];
-
-  const subcategoryName = allSubcategoryNames.find(
-    (name) => toSlug(name) === resolvedParams.subcategory
+  const resolved = await resolveCategorySubcategoryBySlugs(
+    resolvedParams.category,
+    resolvedParams.subcategory
   );
 
-  if (!subcategoryName) {
+  if (!resolved) {
     notFound();
   }
+
+  const { category, subcategory } = resolved;
+  const allProducts = await getAllProducts();
 
   const filteredProducts = allProducts.filter(
     (product) =>
-      normalize(product.category) === normalize(categoryName) &&
-      normalize(product.subcategory || "") === normalize(subcategoryName)
+      (product.categoryId === category.id ||
+        normalize(product.category) === normalize(category.name)) &&
+      (product.subcategoryId === subcategory.id ||
+        normalize(product.subcategory || "") === normalize(subcategory.name))
   );
 
   return (
     <SubcategoryProductsClient
       products={filteredProducts}
-      categoryName={categoryName}
-      subcategoryName={subcategoryName}
+      categoryName={category.name}
+      subcategoryName={subcategory.name}
     />
   );
 }

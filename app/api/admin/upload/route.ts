@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/admin/auth";
-import { uploadImage } from "@/lib/blob/storage";
+import { uploadToStorage } from "@/lib/supabase/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,11 +15,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "File must be an image" }, { status: 400 });
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "File must be an image or PDF" },
+        { status: 400 }
+      );
     }
 
-    const { url } = await uploadImage(file, folder);
+    const { url } = await uploadToStorage(file, folder);
 
     return NextResponse.json({ success: true, url });
   } catch (error: any) {

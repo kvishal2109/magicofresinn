@@ -9,10 +9,6 @@ WHERE lower(trim(category)) IN (
   'furniture'
 );
 
-DELETE FROM categories_metadata
-WHERE lower(trim(category_name)) IN (
-  'wedding',
-  'jewellery',
-  'home decor',
-  'furniture'
-);
+-- After running catalog migration (Admin → Categories → Migrate Legacy Data),
+-- you may drop the legacy table:
+-- DROP TABLE IF EXISTS categories_metadata;

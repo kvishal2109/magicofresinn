@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrderById, updateOrderPaymentStatus } from "@/lib/supabase/orders";
-import { uploadImage } from "@/lib/blob/storage";
+import { uploadToStorage } from "@/lib/supabase/storage";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 
 export async function POST(request: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     let paymentProofUrl: string | undefined;
     if (paymentProof) {
       try {
-        const { url } = await uploadImage(paymentProof, "payment-proofs");
+        const { url } = await uploadToStorage(paymentProof, "payment-proofs");
         paymentProofUrl = url;
       } catch (error) {
         console.error("Error uploading payment proof:", error);
