@@ -1,36 +1,17 @@
 import HomeClient from "@/components/home/HomeClient";
-import { getAllProducts, getAllCategories } from "@/lib/supabase/products";
-import { getCategoriesMetadata } from "@/lib/supabase/categories";
+import { getAllProducts } from "@/lib/supabase/products";
 
 export const revalidate = 300;
 
 export default async function HomePage() {
   try {
-    const [products, categories, categoriesMetadata] = await Promise.all([
-      getAllProducts(),
-      getAllCategories(),
-      getCategoriesMetadata(),
-    ]);
+    const products = await getAllProducts();
 
-    return (
-      <HomeClient
-        initialProducts={products}
-        initialCategories={categories}
-        initialCategoriesMetadata={categoriesMetadata}
-      />
-    );
+    return <HomeClient initialProducts={products} />;
   } catch (error) {
-    // If there's any error, fall back to hardcoded products
     console.error("Error loading homepage, using fallback:", error);
     const { hardcodedProducts } = await import("@/lib/data/products");
-    const fallbackCategories = [...new Set(hardcodedProducts.map(p => p.category))];
-    
-    return (
-      <HomeClient
-        initialProducts={hardcodedProducts}
-        initialCategories={fallbackCategories}
-        initialCategoriesMetadata={{ categories: {}, subcategories: {} }}
-      />
-    );
+
+    return <HomeClient initialProducts={hardcodedProducts} />;
   }
 }
