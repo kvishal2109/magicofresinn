@@ -7,6 +7,7 @@ import Image from "next/image";
 import ProductCard from "@/components/ProductCard";
 import CouponBanner from "@/components/CouponBanner";
 import CatalogBrowse from "@/components/home/CatalogBrowse";
+import ResponsiveModal from "@/components/ui/ResponsiveModal";
 
 type CatalogState = {
   searchQuery: string;
@@ -825,100 +826,97 @@ function HomeClientContent({ initialProducts }: HomeClientProps) {
           </div>
 
           {/* --- Customizable Item Modal --- */}
-          {showCustomModal && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50 p-4">
-              <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-8 relative animate-fadeIn">
+          <ResponsiveModal
+            open={showCustomModal}
+            onClose={() => setShowCustomModal(false)}
+            title="Order a Customizable Item"
+            size="sm"
+            panelClassName="rounded-2xl sm:rounded-3xl"
+          >
+            <p className="text-sm sm:text-[15px] text-gray-700 text-center mb-5">
+              <b>
+                After you submit, WhatsApp will open with all your details. Just press{" "}
+                <span className="bg-green-100 text-green-900 px-1 rounded">Send</span> to place your order!
+              </b>
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!customNote.trim() || !customName.trim() || !customNumber.trim()) {
+                  alert("Please fill all fields.");
+                  return;
+                }
+                setSendingWA(true);
+                const waMsg = `Hi, I want to order a custom item.\nMessage: ${customNote}\nName: ${customName}\nContact: ${customNumber}`;
+                const waMsgEncoded = encodeURIComponent(waMsg);
+                const waURL = `https://wa.me/917209732310?text=${waMsgEncoded}`;
+                window.open(waURL, "_blank");
+                setSendingWA(false);
+                setShowCustomModal(false);
+                setCustomNote("");
+                setCustomName("");
+                setCustomNumber("");
+              }}
+              className="flex flex-col gap-4"
+            >
+              <label className="font-semibold text-purple-700">
+                Your Message/Note
+                <textarea
+                  rows={3}
+                  className="w-full mt-1 rounded-lg border border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                  placeholder="Write what you want customized..."
+                  value={customNote}
+                  required
+                  onChange={(e) => setCustomNote(e.target.value)}
+                />
+              </label>
+              <label className="font-semibold text-purple-700">
+                Your Name
+                <input
+                  type="text"
+                  className="w-full mt-1 rounded-lg border border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                  placeholder="Your name"
+                  value={customName}
+                  required
+                  onChange={(e) => setCustomName(e.target.value)}
+                />
+              </label>
+              <label className="font-semibold text-purple-700">
+                Your Mobile Number
+                <input
+                  type="tel"
+                  className="w-full mt-1 rounded-lg border border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
+                  placeholder="Your 10-digit number"
+                  value={customNumber}
+                  required
+                  onChange={(e) => setCustomNumber(e.target.value)}
+                  pattern="[0-9]{10,13}"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={sendingWA}
+                className="mt-2 rounded-full bg-gradient-to-r from-green-500 to-amber-400 hover:from-green-600 hover:to-yellow-500 text-white font-bold py-3 shadow-lg transition-all disabled:opacity-60"
+              >
+                {sendingWA ? "Sending to WhatsApp..." : "Send Order on WhatsApp"}
+              </button>
+            </form>
+            {(customNote || customName || customNumber) && (
+              <div className="mt-3 flex flex-col items-center">
                 <button
-                  onClick={() => setShowCustomModal(false)}
-                  className="absolute top-4 right-6 text-gray-500 hover:text-purple-600 text-lg font-bold"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-                <h3 className="text-lg sm:text-xl font-bold text-center mb-2 text-purple-700">Order a Customizable Item</h3>
-                {/* WhatsApp opening explanation */}
-                <p className="text-sm sm:text-[15px] text-gray-700 text-center mb-5">
-                  <b>After you submit, WhatsApp will open with all your details. Just press <span className="bg-green-100 text-green-900 px-1 rounded">Send</span> to place your order!</b>
-                </p>
-                <form
-                  onSubmit={e => {
-                    e.preventDefault();
-                    if (!customNote.trim() || !customName.trim() || !customNumber.trim()) {
-                      alert('Please fill all fields.');
-                      return;
-                    }
-                    setSendingWA(true);
+                  className="text-sm text-purple-700 hover:text-purple-900 bg-purple-100 px-3 py-1 rounded-lg mt-1"
+                  onClick={() => {
                     const waMsg = `Hi, I want to order a custom item.\nMessage: ${customNote}\nName: ${customName}\nContact: ${customNumber}`;
-                    const waMsgEncoded = encodeURIComponent(waMsg);
-                    const waURL = `https://wa.me/917209732310?text=${waMsgEncoded}`;
-                    window.open(waURL, '_blank');
-                    setSendingWA(false);
-                    setShowCustomModal(false);
-                    setCustomNote(""); setCustomName(""); setCustomNumber("");
+                    navigator.clipboard.writeText(waMsg);
+                    alert("Message copied! You can now paste it in WhatsApp if needed.");
                   }}
-                  className="flex flex-col gap-4"
+                  type="button"
                 >
-                  <label className="font-semibold text-purple-700">
-                    Your Message/Note
-                    <textarea
-                      rows={3}
-                      className="w-full mt-1 rounded-lg border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
-                      placeholder="Write what you want customized..."
-                      value={customNote}
-                      required
-                      onChange={e => setCustomNote(e.target.value)}
-                    />
-                  </label>
-                  <label className="font-semibold text-purple-700">
-                    Your Name
-                    <input
-                      type="text"
-                      className="w-full mt-1 rounded-lg border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
-                      placeholder="Your name"
-                      value={customName}
-                      required
-                      onChange={e => setCustomName(e.target.value)}
-                    />
-                  </label>
-                  <label className="font-semibold text-purple-700">
-                    Your Mobile Number
-                    <input
-                      type="tel"
-                      className="w-full mt-1 rounded-lg border-gray-300 bg-purple-50/40 p-2 focus:outline-none focus:ring-2 focus:ring-yellow-200"
-                      placeholder="Your 10-digit number"
-                      value={customNumber}
-                      required
-                      onChange={e => setCustomNumber(e.target.value)}
-                      pattern="[0-9]{10,13}"
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={sendingWA}
-                    className="mt-4 rounded-full bg-gradient-to-r from-green-500 to-amber-400 hover:from-green-600 hover:to-yellow-500 text-white font-bold py-3 shadow-lg transition-all disabled:opacity-60"
-                  >
-                    {sendingWA ? "Sending to WhatsApp..." : "Send Order on WhatsApp"}
-                  </button>
-                </form>
-                {/* Copy to Clipboard fallback */}
-                {(customNote || customName || customNumber) && (
-                  <div className="mt-3 flex flex-col items-center">
-                    <button
-                      className="text-sm text-purple-700 hover:text-purple-900 bg-purple-100 px-3 py-1 rounded-lg mt-1"
-                      onClick={() => {
-                        const waMsg = `Hi, I want to order a custom item.\nMessage: ${customNote}\nName: ${customName}\nContact: ${customNumber}`;
-                        navigator.clipboard.writeText(waMsg);
-                        alert('Message copied! You can now paste it in WhatsApp if needed.');
-                      }}
-                      type="button"
-                    >
-                      Copy message to clipboard (if WhatsApp does not open)
-                    </button>
-                  </div>
-                )}
+                  Copy message to clipboard (if WhatsApp does not open)
+                </button>
               </div>
-            </div>
-          )}
+            )}
+          </ResponsiveModal>
         </div>
       </section>
 

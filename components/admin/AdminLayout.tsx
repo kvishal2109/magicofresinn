@@ -169,10 +169,10 @@ export default function AdminLayout({
     });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <aside 
-        className={`bg-white shadow-xl w-[min(18rem,85vw)] md:w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${
+        className={`bg-white shadow-xl w-[min(18rem,85vw)] md:w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-40 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -215,7 +215,7 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 md:ml-64">
         {/* Top bar */}
-        <header className="bg-white shadow-sm border-b sticky top-0 z-30">
+        <header className="bg-white shadow-sm border-b sticky top-0 z-20">
           <div className="px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
@@ -245,7 +245,7 @@ export default function AdminLayout({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { Plus, Trash2, Pencil, ChevronDown, ChevronRight, Upload } from "lucide-react";
 import toast from "react-hot-toast";
+import AdminModal from "@/components/admin/AdminModal";
 import type { DbCategory, DbSubcategory } from "@/lib/supabase/catalog-types";
 
 interface CategoryForm {
@@ -229,7 +230,7 @@ export default function AdminCategoriesPage() {
             setShowCategoryAdvanced(false);
             setCategoryForm(emptyCategory());
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Category
@@ -309,7 +310,10 @@ export default function AdminCategoriesPage() {
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">Subcategories</h4>
                       <button
-                        onClick={() => setSubcategoryForm(emptySubcategory(cat.id))}
+                        onClick={() => {
+                        setShowSubcategoryAdvanced(false);
+                        setSubcategoryForm(emptySubcategory(cat.id));
+                      }}
                         className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" /> Add
@@ -336,7 +340,8 @@ export default function AdminCategoriesPage() {
                               <p className="text-xs text-gray-500">/{sub.slug}</p>
                             </div>
                             <button
-                              onClick={() =>
+                              onClick={() => {
+                                setShowSubcategoryAdvanced(true);
                                 setSubcategoryForm({
                                   id: sub.id,
                                   category_id: sub.category_id,
@@ -346,8 +351,8 @@ export default function AdminCategoriesPage() {
                                   image_url: sub.image_url || "",
                                   sort_order: sub.sort_order,
                                   is_active: sub.is_active,
-                                })
-                              }
+                                });
+                              }}
                               className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -371,231 +376,247 @@ export default function AdminCategoriesPage() {
       )}
 
       {categoryForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-1">
-              {categoryForm.id ? "Edit Category" : "New Category"}
-            </h2>
-            <p className="text-sm text-gray-500 mb-5">
-              Appears on the homepage and in the header menu.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={categoryForm.name}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                  placeholder="e.g. Wedding, Home Decor"
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
-                {categoryForm.image_url ? (
-                  <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
-                    <Image src={categoryForm.image_url} alt="" fill className="object-cover" />
-                  </div>
-                ) : null}
-                <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
-                  <Upload className="w-4 h-4" />
-                  {uploadingImage ? "Uploading..." : "Upload image"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingImage}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleImageUpload(file, "categories", (url) =>
-                          setCategoryForm((f) => f && { ...f, image_url: url })
-                        );
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-
+        <AdminModal
+          open={!!categoryForm}
+          onClose={() => setCategoryForm(null)}
+          title={categoryForm.id ? "Edit Category" : "New Category"}
+          description="Appears on the homepage and in the header menu."
+          size="sm"
+          footer={
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowCategoryAdvanced((v) => !v)}
-                className="text-sm text-blue-600 hover:text-blue-800"
-              >
-                {showCategoryAdvanced ? "Hide advanced options" : "Show advanced options"}
-              </button>
-
-              {showCategoryAdvanced && (
-                <div className="space-y-4 pt-1 border-t border-gray-100">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Slug <span className="text-gray-400 font-normal">(auto-generated if empty)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={categoryForm.slug}
-                      onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea
-                      value={categoryForm.description}
-                      onChange={(e) =>
-                        setCategoryForm({ ...categoryForm, description: e.target.value })
-                      }
-                      rows={2}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
-                      <input
-                        type="number"
-                        value={categoryForm.sort_order}
-                        onChange={(e) =>
-                          setCategoryForm({ ...categoryForm, sort_order: Number(e.target.value) })
-                        }
-                        className="w-20 px-3 py-2 border rounded-lg"
-                      />
-                    </div>
-                    <label className="flex items-center gap-2 pt-6">
-                      <input
-                        type="checkbox"
-                        checked={categoryForm.is_active}
-                        onChange={(e) =>
-                          setCategoryForm({ ...categoryForm, is_active: e.target.checked })
-                        }
-                      />
-                      <span className="text-sm">Visible on storefront</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100">
-              <button
                 onClick={() => setCategoryForm(null)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="w-full sm:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={saveCategory}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Save
               </button>
             </div>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+              <input
+                type="text"
+                value={categoryForm.name}
+                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                placeholder="e.g. Wedding, Home Decor"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
+              {categoryForm.image_url ? (
+                <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
+                  <Image src={categoryForm.image_url} alt="" fill className="object-cover" />
+                </div>
+              ) : null}
+              <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
+                <Upload className="w-4 h-4" />
+                {uploadingImage ? "Uploading..." : "Upload image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file, "categories", (url) =>
+                        setCategoryForm((f) => f && { ...f, image_url: url })
+                      );
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCategoryAdvanced((v) => !v)}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {showCategoryAdvanced ? "Hide advanced options" : "Show advanced options"}
+            </button>
+            {showCategoryAdvanced && (
+              <div className="space-y-4 pt-1 border-t border-gray-100">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Slug <span className="text-gray-400 font-normal">(auto-generated if empty)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={categoryForm.slug}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={categoryForm.description}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, description: e.target.value })
+                    }
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
+                    <input
+                      type="number"
+                      value={categoryForm.sort_order}
+                      onChange={(e) =>
+                        setCategoryForm({ ...categoryForm, sort_order: Number(e.target.value) })
+                      }
+                      className="w-24 px-3 py-2 border rounded-lg"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={categoryForm.is_active}
+                      onChange={(e) =>
+                        setCategoryForm({ ...categoryForm, is_active: e.target.checked })
+                      }
+                    />
+                    <span className="text-sm">Visible on storefront</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </AdminModal>
       )}
 
       {subcategoryForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-semibold mb-4">
-              {subcategoryForm.id ? "Edit Subcategory" : "New Subcategory"}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={subcategoryForm.name}
-                  onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug (optional)</label>
-                <input
-                  type="text"
-                  value={subcategoryForm.slug}
-                  onChange={(e) => setSubcategoryForm({ ...subcategoryForm, slug: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={subcategoryForm.description}
-                  onChange={(e) =>
-                    setSubcategoryForm({ ...subcategoryForm, description: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                {subcategoryForm.image_url && (
-                  <div className="relative w-24 h-24 mb-2 rounded overflow-hidden">
-                    <Image src={subcategoryForm.image_url} alt="" fill className="object-cover" />
-                  </div>
-                )}
-                <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <Upload className="w-4 h-4" />
-                  {uploadingImage ? "Uploading..." : "Upload image"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingImage}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleImageUpload(file, "subcategories", (url) =>
-                          setSubcategoryForm((f) => f && { ...f, image_url: url })
-                        );
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              <div className="flex gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
-                  <input
-                    type="number"
-                    value={subcategoryForm.sort_order}
-                    onChange={(e) =>
-                      setSubcategoryForm({ ...subcategoryForm, sort_order: Number(e.target.value) })
-                    }
-                    className="w-24 px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <label className="flex items-center gap-2 mt-6">
-                  <input
-                    type="checkbox"
-                    checked={subcategoryForm.is_active}
-                    onChange={(e) =>
-                      setSubcategoryForm({ ...subcategoryForm, is_active: e.target.checked })
-                    }
-                  />
-                  <span className="text-sm">Active</span>
-                </label>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
+        <AdminModal
+          open={!!subcategoryForm}
+          onClose={() => setSubcategoryForm(null)}
+          title={subcategoryForm.id ? "Edit Subcategory" : "New Subcategory"}
+          size="sm"
+          footer={
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setSubcategoryForm(null)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="w-full sm:w-auto px-4 py-2 border rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={saveSubcategory}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Save
               </button>
             </div>
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+              <input
+                type="text"
+                value={subcategoryForm.name}
+                onChange={(e) => setSubcategoryForm({ ...subcategoryForm, name: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              {subcategoryForm.image_url ? (
+                <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
+                  <Image src={subcategoryForm.image_url} alt="" fill className="object-cover" />
+                </div>
+              ) : null}
+              <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
+                <Upload className="w-4 h-4" />
+                {uploadingImage ? "Uploading..." : "Upload image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingImage}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file, "subcategories", (url) =>
+                        setSubcategoryForm((f) => f && { ...f, image_url: url })
+                      );
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSubcategoryAdvanced((v) => !v)}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              {showSubcategoryAdvanced ? "Hide advanced options" : "Show advanced options"}
+            </button>
+            {showSubcategoryAdvanced && (
+              <div className="space-y-4 pt-1 border-t border-gray-100">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Slug (optional)</label>
+                  <input
+                    type="text"
+                    value={subcategoryForm.slug}
+                    onChange={(e) => setSubcategoryForm({ ...subcategoryForm, slug: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={subcategoryForm.description}
+                    onChange={(e) =>
+                      setSubcategoryForm({ ...subcategoryForm, description: e.target.value })
+                    }
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
+                    <input
+                      type="number"
+                      value={subcategoryForm.sort_order}
+                      onChange={(e) =>
+                        setSubcategoryForm({ ...subcategoryForm, sort_order: Number(e.target.value) })
+                      }
+                      className="w-24 px-3 py-2 border rounded-lg"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={subcategoryForm.is_active}
+                      onChange={(e) =>
+                        setSubcategoryForm({ ...subcategoryForm, is_active: e.target.checked })
+                      }
+                    />
+                    <span className="text-sm">Visible on storefront</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </AdminModal>
       )}
     </div>
   );

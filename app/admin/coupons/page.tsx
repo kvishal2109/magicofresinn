@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, Ticket } from "lucide-react";
 import toast from "react-hot-toast";
 import { getCouponDescription, type Coupon } from "@/lib/data/coupons";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -266,31 +267,20 @@ export default function AdminCouponsPage() {
         )}
       </div>
 
-      {confirmDeleteCode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm mx-4">
-            <p className="text-gray-700 mb-4">
-              Remove coupon <strong className="font-mono">{confirmDeleteCode}</strong>? This cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteCode(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!confirmDeleteCode}
+        onClose={() => setConfirmDeleteCode(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Remove coupon"
+        message={
+          confirmDeleteCode
+            ? `Remove coupon ${confirmDeleteCode}? This cannot be undone.`
+            : ""
+        }
+        confirmText="Remove"
+        variant="danger"
+        loading={!!deletingCode}
+      />
 
       <p className="text-sm text-gray-500">
         Coupons appear on the home page banner, checkout, and payment pages. If Supabase is not set up with the coupons table, only the default codes from the codebase are shown and you cannot add or remove them here.

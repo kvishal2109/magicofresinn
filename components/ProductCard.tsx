@@ -15,6 +15,7 @@ import { getProductSizes, hasProductSizes } from "@/lib/data/productSizes";
 import { toast } from "react-hot-toast";
 import { useState, useEffect } from "react";
 import SizeSelector from "./SizeSelector";
+import ResponsiveModal from "@/components/ui/ResponsiveModal";
 
 interface ProductCardProps {
   product: Product;
@@ -250,34 +251,40 @@ export default function ProductCard({ product }: ProductCardProps) {
       </Link>
       
       {/* Size Selector Modal */}
-      {showSizeSelector && hasSizes && productSizes && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md max-h-[90vh] overflow-y-auto w-full shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Select Size</h3>
-            <SizeSelector
-              sizes={productSizes}
-              selectedSize={selectedSize}
-              onSizeSelect={setSelectedSize}
-              basePrice={product.price}
-            />
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowSizeSelector(false)}
-                className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddToCart}
-                disabled={!selectedSize}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-300 transition-all"
-              >
-                Add to Cart
-              </button>
-            </div>
+      <ResponsiveModal
+        open={showSizeSelector && hasSizes && !!productSizes}
+        onClose={() => setShowSizeSelector(false)}
+        title="Select Size"
+        size="sm"
+        footer={
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowSizeSelector(false)}
+              className="w-full sm:w-auto px-4 py-2 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={!selectedSize}
+              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-300 transition-all"
+            >
+              Add to Cart
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        {productSizes ? (
+          <SizeSelector
+            sizes={productSizes}
+            selectedSize={selectedSize}
+            onSizeSelect={setSelectedSize}
+            basePrice={product.price}
+          />
+        ) : null}
+      </ResponsiveModal>
     </>
   );
 }
