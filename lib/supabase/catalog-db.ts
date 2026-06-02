@@ -3,17 +3,11 @@ import { getSupabaseAdmin } from "./client";
 import { generateId } from "./ids";
 import type {
   CatalogTree,
-  CatalogTreeCatalog,
   CatalogTreeCategory,
   CatalogTreeSubcategory,
-  DbCatalog,
   DbCategory,
   DbSubcategory,
 } from "./catalog-types";
-
-function mapCatalog(row: Record<string, unknown>): DbCatalog {
-  return row as unknown as DbCatalog;
-}
 
 function mapCategory(row: Record<string, unknown>): DbCategory {
   return row as unknown as DbCategory;
@@ -23,38 +17,13 @@ function mapSubcategory(row: Record<string, unknown>): DbSubcategory {
   return row as unknown as DbSubcategory;
 }
 
-async function uniqueCatalogSlug(base: string, excludeId?: string): Promise<string> {
-  const supabase = getSupabaseAdmin();
-  let slug = toSlug(base);
-  let attempt = 0;
-
-  while (attempt < 20) {
-    let query = supabase.from("catalogs").select("id").eq("slug", slug);
-    if (excludeId) query = query.neq("id", excludeId);
-    const { data } = await query.maybeSingle();
-    if (!data) return slug;
-    attempt += 1;
-    slug = `${toSlug(base)}-${attempt}`;
-  }
-  return `${toSlug(base)}-${Date.now()}`;
-}
-
-async function uniqueCategorySlug(
-  base: string,
-  catalogId: string | null | undefined,
-  excludeId?: string
-): Promise<string> {
+async function uniqueCategorySlug(base: string, excludeId?: string): Promise<string> {
   const supabase = getSupabaseAdmin();
   let slug = toSlug(base);
   let attempt = 0;
 
   while (attempt < 20) {
     let query = supabase.from("categories").select("id").eq("slug", slug);
-    if (catalogId) {
-      query = query.eq("catalog_id", catalogId);
-    } else {
-      query = query.is("catalog_id", null);
-    }
     if (excludeId) query = query.neq("id", excludeId);
     const { data } = await query.maybeSingle();
     if (!data) return slug;
@@ -88,92 +57,6 @@ async function uniqueSubcategorySlug(
   return `${toSlug(base)}-${Date.now()}`;
 }
 
-export async function listCatalogs(includeInactive = true): Promise<DbCatalog[]> {
-  const supabase = getSupabaseAdmin();
-  let query = supabase.from("catalogs").select("*").order("sort_order").order("name");
-  if (!includeInactive) query = query.eq("is_active", true);
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data || []).map(mapCatalog);
-}
-
-export async function getCatalogById(id: string): Promise<DbCatalog | null> {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase.from("catalogs").select("*").eq("id", id).maybeSingle();
-  if (error) throw error;
-  return data ? mapCatalog(data) : null;
-}
-
-export async function createCatalog(input: {
-  name: string;
-  slug?: string;
-  description?: string;
-  cover_image_url?: string;
-  pdf_url?: string;
-  type?: string;
-  is_active?: boolean;
-  sort_order?: number;
-}): Promise<DbCatalog> {
-  const supabase = getSupabaseAdmin();
-  const slug = input.slug ? toSlug(input.slug) : await uniqueCatalogSlug(input.name);
-  const id = generateId("catalog");
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("catalogs")
-    .insert({
-      id,
-      name: input.name.trim(),
-      slug,
-      description: input.description || null,
-      cover_image_url: input.cover_image_url || null,
-      pdf_url: input.pdf_url || null,
-      type: input.type || "collection",
-      is_active: input.is_active ?? true,
-      sort_order: input.sort_order ?? 0,
-      created_at: now,
-      updated_at: now,
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return mapCatalog(data);
-}
-
-export async function updateCatalog(
-  id: string,
-  updates: Partial<Omit<DbCatalog, "id" | "created_at">>
-): Promise<DbCatalog> {
-  const supabase = getSupabaseAdmin();
-  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
-  if (updates.name !== undefined) payload.name = updates.name.trim();
-  if (updates.slug !== undefined) payload.slug = toSlug(updates.slug);
-  if (updates.description !== undefined) payload.description = updates.description;
-  if (updates.cover_image_url !== undefined) payload.cover_image_url = updates.cover_image_url;
-  if (updates.pdf_url !== undefined) payload.pdf_url = updates.pdf_url;
-  if (updates.type !== undefined) payload.type = updates.type;
-  if (updates.is_active !== undefined) payload.is_active = updates.is_active;
-  if (updates.sort_order !== undefined) payload.sort_order = updates.sort_order;
-
-  const { data, error } = await supabase
-    .from("catalogs")
-    .update(payload)
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return mapCatalog(data);
-}
-
-export async function deleteCatalog(id: string): Promise<void> {
-  const supabase = getSupabaseAdmin();
-  const { error } = await supabase.from("catalogs").delete().eq("id", id);
-  if (error) throw error;
-}
-
 export async function listCategories(includeInactive = true): Promise<DbCategory[]> {
   const supabase = getSupabaseAdmin();
   let query = supabase.from("categories").select("*").order("sort_order").order("name");
@@ -193,16 +76,13 @@ export async function getCategoryById(id: string): Promise<DbCategory | null> {
 export async function createCategory(input: {
   name: string;
   slug?: string;
-  catalog_id?: string | null;
   description?: string;
   image_url?: string;
   sort_order?: number;
   is_active?: boolean;
 }): Promise<DbCategory> {
   const supabase = getSupabaseAdmin();
-  const slug = input.slug
-    ? toSlug(input.slug)
-    : await uniqueCategorySlug(input.name, input.catalog_id ?? null);
+  const slug = input.slug ? toSlug(input.slug) : await uniqueCategorySlug(input.name);
   const id = generateId("category");
   const now = new Date().toISOString();
 
@@ -210,7 +90,6 @@ export async function createCategory(input: {
     .from("categories")
     .insert({
       id,
-      catalog_id: input.catalog_id ?? null,
       name: input.name.trim(),
       slug,
       description: input.description || null,
@@ -238,7 +117,6 @@ export async function updateCategory(
   const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (updates.name !== undefined) payload.name = updates.name.trim();
   if (updates.slug !== undefined) payload.slug = toSlug(updates.slug);
-  if (updates.catalog_id !== undefined) payload.catalog_id = updates.catalog_id;
   if (updates.description !== undefined) payload.description = updates.description;
   if (updates.image_url !== undefined) payload.image_url = updates.image_url;
   if (updates.sort_order !== undefined) payload.sort_order = updates.sort_order;
@@ -371,29 +249,24 @@ export async function deleteSubcategory(id: string): Promise<void> {
 export async function getCatalogTree(activeOnly = true): Promise<CatalogTree> {
   const supabase = getSupabaseAdmin();
 
-  let catalogQuery = supabase.from("catalogs").select("*").order("sort_order").order("name");
   let categoryQuery = supabase.from("categories").select("*").order("sort_order").order("name");
   let subcategoryQuery = supabase.from("subcategories").select("*").order("sort_order").order("name");
 
   if (activeOnly) {
-    catalogQuery = catalogQuery.eq("is_active", true);
     categoryQuery = categoryQuery.eq("is_active", true);
     subcategoryQuery = subcategoryQuery.eq("is_active", true);
   }
 
-  const [catalogRes, categoryRes, subcategoryRes, productRes] = await Promise.all([
-    catalogQuery,
+  const [categoryRes, subcategoryRes, productRes] = await Promise.all([
     categoryQuery,
     subcategoryQuery,
     supabase.from("products").select("category_id, subcategory_id"),
   ]);
 
-  if (catalogRes.error) throw catalogRes.error;
   if (categoryRes.error) throw categoryRes.error;
   if (subcategoryRes.error) throw subcategoryRes.error;
   if (productRes.error) throw productRes.error;
 
-  const catalogs = (catalogRes.data || []).map(mapCatalog);
   const categories = (categoryRes.data || []).map(mapCategory);
   const subcategories = (subcategoryRes.data || []).map(mapSubcategory);
   const products = productRes.data || [];
@@ -428,45 +301,18 @@ export async function getCatalogTree(activeOnly = true): Promise<CatalogTree> {
     subsByCategory.set(sub.category_id, list);
   });
 
-  const buildCategory = (cat: DbCategory): CatalogTreeCategory => ({
+  const treeCategories: CatalogTreeCategory[] = categories.map((cat) => ({
     id: cat.id,
     name: cat.name,
     slug: cat.slug,
     description: cat.description || undefined,
     imageUrl: cat.image_url || undefined,
     sortOrder: cat.sort_order,
-    catalogId: cat.catalog_id || undefined,
     subcategories: subsByCategory.get(cat.id) || [],
     productCount: categoryProductCounts.get(cat.id) || 0,
-  });
-
-  const categoriesByCatalog = new Map<string, CatalogTreeCategory[]>();
-  const globalCategories: CatalogTreeCategory[] = [];
-
-  categories.forEach((cat) => {
-    const node = buildCategory(cat);
-    if (cat.catalog_id) {
-      const list = categoriesByCatalog.get(cat.catalog_id) || [];
-      list.push(node);
-      categoriesByCatalog.set(cat.catalog_id, list);
-    } else {
-      globalCategories.push(node);
-    }
-  });
-
-  const catalogTree: CatalogTreeCatalog[] = catalogs.map((catalog) => ({
-    id: catalog.id,
-    name: catalog.name,
-    slug: catalog.slug,
-    description: catalog.description || undefined,
-    coverImageUrl: catalog.cover_image_url || undefined,
-    pdfUrl: catalog.pdf_url || undefined,
-    type: catalog.type || undefined,
-    sortOrder: catalog.sort_order,
-    categories: categoriesByCatalog.get(catalog.id) || [],
   }));
 
-  return { catalogs: catalogTree, globalCategories };
+  return { categories: treeCategories };
 }
 
 export async function resolveCategorySubcategoryBySlugs(

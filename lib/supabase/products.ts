@@ -49,8 +49,6 @@ export async function getAllProducts(): Promise<Product[]> {
       subcategoryId: row.subcategory_id || undefined,
       inStock: row.in_stock ?? true,
       stock: row.stock || undefined,
-      catalogId: row.catalog_id || undefined,
-      catalogName: row.catalog_name || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     }));
@@ -107,8 +105,6 @@ export async function getProductsByCategory(category: string): Promise<Product[]
       subcategoryId: row.subcategory_id || undefined,
       inStock: row.in_stock ?? true,
       stock: row.stock || undefined,
-      catalogId: row.catalog_id || undefined,
-      catalogName: row.catalog_name || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     }));
@@ -116,50 +112,6 @@ export async function getProductsByCategory(category: string): Promise<Product[]
     console.error("Error fetching products by category:", error);
     const products = await getAllProducts();
     return products.filter((p) => p.category === category);
-  }
-}
-
-/**
- * Get products by catalog
- */
-export async function getProductsByCatalog(catalogId: string): Promise<Product[]> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('catalog_id', catalogId)
-      .order('created_at', { ascending: false });
-
-    if (error || !data) {
-      const products = await getAllProducts();
-      return products.filter((p) => p.catalogId === catalogId);
-    }
-
-    return data.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      price: parseFloat(row.price),
-      originalPrice: row.original_price ? parseFloat(row.original_price) : undefined,
-      discount: row.discount ? parseFloat(row.discount) : undefined,
-      image: row.image,
-      images: row.images || [],
-      category: row.category,
-      subcategory: row.subcategory || undefined,
-      categoryId: row.category_id || undefined,
-      subcategoryId: row.subcategory_id || undefined,
-      inStock: row.in_stock ?? true,
-      stock: row.stock || undefined,
-      catalogId: row.catalog_id || undefined,
-      catalogName: row.catalog_name || undefined,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at),
-    }));
-  } catch (error) {
-    console.error("Error fetching products by catalog:", error);
-    const products = await getAllProducts();
-    return products.filter((p) => p.catalogId === catalogId);
   }
 }
 
@@ -206,8 +158,6 @@ export async function createProduct(
         subcategory_id: productData.subcategoryId || null,
         in_stock: productData.inStock ?? true,
         stock: productData.stock || null,
-        catalog_id: productData.catalogId || null,
-        catalog_name: productData.catalogName || null,
       });
 
     if (error) {
@@ -266,8 +216,6 @@ export async function updateProduct(
     if (updates.subcategoryId !== undefined) updateData.subcategory_id = updates.subcategoryId;
     if (updates.inStock !== undefined) updateData.in_stock = updates.inStock;
     if (updates.stock !== undefined) updateData.stock = updates.stock;
-    if (updates.catalogId !== undefined) updateData.catalog_id = updates.catalogId;
-    if (updates.catalogName !== undefined) updateData.catalog_name = updates.catalogName;
 
     console.log("Supabase update data:", JSON.stringify(updateData, null, 2));
     

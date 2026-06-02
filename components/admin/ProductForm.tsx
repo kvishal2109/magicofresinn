@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Product, Catalog } from "@/types";
+import { Product } from "@/types";
 import ImageUpload from "./ImageUpload";
 import toast from "react-hot-toast";
 import type { DbCategory, DbSubcategory } from "@/lib/supabase/catalog-types";
@@ -28,14 +28,11 @@ export default function ProductForm({
     images: [] as string[],
     categoryId: "",
     subcategoryId: "",
-    catalogId: "",
-    catalogName: "",
     inStock: true,
     stock: "",
   });
   const [categories, setCategories] = useState<DbCategory[]>([]);
   const [subcategories, setSubcategories] = useState<DbSubcategory[]>([]);
-  const [catalogs, setCatalogs] = useState<Catalog[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/categories-v2")
@@ -47,19 +44,6 @@ export default function ProductForm({
       })
       .catch((error) => {
         console.warn("Could not fetch categories for product form:", error);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/catalogs")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.success && Array.isArray(data.catalogs)) {
-          setCatalogs(data.catalogs);
-        }
-      })
-      .catch((error) => {
-        console.warn("Could not fetch catalogs for product form:", error);
       });
   }, []);
 
@@ -82,14 +66,6 @@ export default function ProductForm({
   }, [formData.categoryId]);
 
   useEffect(() => {
-    if (!formData.catalogId || formData.catalogName) return;
-    const match = catalogs.find((catalog) => catalog.id === formData.catalogId);
-    if (match) {
-      setFormData((prev) => ({ ...prev, catalogName: match.name }));
-    }
-  }, [catalogs, formData.catalogId, formData.catalogName]);
-
-  useEffect(() => {
     if (!product) return;
 
     setFormData({
@@ -102,8 +78,6 @@ export default function ProductForm({
       images: product.images || [],
       categoryId: product.categoryId || "",
       subcategoryId: product.subcategoryId || "",
-      catalogId: product.catalogId || "",
-      catalogName: product.catalogName || "",
       inStock: product.inStock ?? true,
       stock: product.stock?.toString() || "",
     });
@@ -165,16 +139,6 @@ export default function ProductForm({
     });
   };
 
-  const handleCatalogChange = (value: string) => {
-    const selectedCatalog = catalogs.find((catalog) => catalog.id === value);
-    const name = value ? selectedCatalog?.name || "" : "";
-    setFormData((prev) => ({
-      ...prev,
-      catalogId: value,
-      catalogName: name,
-    }));
-  };
-
   const handleCategoryChange = (categoryId: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -190,14 +154,6 @@ export default function ProductForm({
     try {
       const selectedCategory = categories.find((c) => c.id === formData.categoryId);
       const selectedSubcategory = subcategories.find((s) => s.id === formData.subcategoryId);
-      const trimmedCatalogId = formData.catalogId ? formData.catalogId.trim() : "";
-      const selectedCatalog =
-        trimmedCatalogId && catalogs.length
-          ? catalogs.find((catalog) => catalog.id === trimmedCatalogId)
-          : undefined;
-      const submitCatalogName = trimmedCatalogId
-        ? selectedCatalog?.name || formData.catalogName || undefined
-        : undefined;
 
       if (!formData.categoryId || !selectedCategory) {
         toast.error("Please select a category");
@@ -226,8 +182,6 @@ export default function ProductForm({
         subcategory: selectedSubcategory?.name || undefined,
         categoryId: formData.categoryId,
         subcategoryId: formData.subcategoryId || undefined,
-        catalogId: trimmedCatalogId || undefined,
-        catalogName: submitCatalogName,
         price: priceValue,
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
@@ -306,24 +260,6 @@ export default function ProductForm({
             {subcategories.map((sub) => (
               <option key={sub.id} value={sub.id}>
                 {sub.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Catalog
-          </label>
-          <select
-            value={formData.catalogId}
-            onChange={(e) => handleCatalogChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">Assign to catalog (optional)</option>
-            {catalogs.map((catalog) => (
-              <option key={catalog.id} value={catalog.id}>
-                {catalog.name}
               </option>
             ))}
           </select>

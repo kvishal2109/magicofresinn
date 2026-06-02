@@ -48,8 +48,6 @@ export async function POST(request: NextRequest) {
       subcategoryId,
       inStock,
       stock,
-      catalogId,
-      catalogName,
     } = body;
 
     // Validate required fields
@@ -81,8 +79,6 @@ export async function POST(request: NextRequest) {
       subcategoryId: subcategoryId || undefined,
       inStock: inStock !== undefined ? Boolean(inStock) : true,
       stock: stock ? Number(stock) : undefined,
-      catalogId: catalogId || undefined,
-      catalogName: catalogName || undefined,
     };
 
     const productId = await SupabaseProducts.createProduct(productData);

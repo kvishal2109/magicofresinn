@@ -66,8 +66,6 @@ export async function migrateProduct(
       subcategory: product.subcategory,
       inStock: product.inStock ?? true,
       stock: product.stock,
-      catalogId: product.catalogId,
-      catalogName: product.catalogName,
     };
 
     // Create product in Supabase (we'll use a custom function to preserve the ID)
@@ -88,8 +86,6 @@ export async function migrateProduct(
         subcategory: productData.subcategory || null,
         in_stock: productData.inStock ?? true,
         stock: productData.stock || null,
-        catalog_id: productData.catalogId || null,
-        catalog_name: productData.catalogName || null,
         created_at: product.createdAt instanceof Date 
           ? product.createdAt.toISOString() 
           : new Date(product.createdAt).toISOString(),

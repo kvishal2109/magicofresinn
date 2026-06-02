@@ -119,10 +119,7 @@ export default function CatalogBrowse({ initialTree }: CatalogBrowseProps) {
       .finally(() => setLoading(false));
   }, [initialTree]);
 
-  const allCategories: CatalogTreeCategory[] = [
-    ...(tree?.globalCategories || []),
-    ...(tree?.catalogs || []).flatMap((c) => c.categories),
-  ];
+  const allCategories = tree?.categories || [];
 
   if (loading) {
     return (

@@ -12,8 +12,6 @@ CREATE TABLE IF NOT EXISTS products (
   subcategory TEXT,
   in_stock BOOLEAN DEFAULT true,
   stock INTEGER,
-  catalog_id TEXT,
-  catalog_name TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -93,24 +91,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
 
--- Dynamic catalog schema (see lib/supabase/migrations/catalog-v2.sql for full migration)
-CREATE TABLE IF NOT EXISTS catalogs (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT,
-  cover_image_url TEXT,
-  pdf_url TEXT,
-  type TEXT DEFAULT 'collection',
-  is_active BOOLEAN DEFAULT true,
-  sort_order INTEGER DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
+-- Categories & subcategories (see lib/supabase/migrations/catalog-v2.sql)
 CREATE TABLE IF NOT EXISTS categories (
   id TEXT PRIMARY KEY,
-  catalog_id TEXT REFERENCES catalogs(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   description TEXT,
@@ -121,15 +104,7 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_catalog_slug
-  ON categories (catalog_id, slug)
-  WHERE catalog_id IS NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_global_slug
-  ON categories (slug)
-  WHERE catalog_id IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_categories_catalog_id ON categories(catalog_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_sort ON categories(sort_order);
 
 CREATE TABLE IF NOT EXISTS subcategories (

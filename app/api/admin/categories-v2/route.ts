@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
     const category = await createCategory({
       name: body.name,
       slug: body.slug,
-      catalog_id: body.catalog_id ?? null,
       description: body.description,
       image_url: body.image_url,
       sort_order: body.sort_order,
@@ -72,7 +71,6 @@ export async function PUT(request: NextRequest) {
     const category = await updateCategory(body.id, {
       name: body.name,
       slug: body.slug,
-      catalog_id: body.catalog_id,
       description: body.description,
       image_url: body.image_url,
       sort_order: body.sort_order,

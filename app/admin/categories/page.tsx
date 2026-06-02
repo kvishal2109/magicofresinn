@@ -64,6 +64,8 @@ export default function AdminCategoriesPage() {
   const [categoryForm, setCategoryForm] = useState<CategoryForm | null>(null);
   const [subcategoryForm, setSubcategoryForm] = useState<SubcategoryForm | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCategoryAdvanced, setShowCategoryAdvanced] = useState(false);
+  const [showSubcategoryAdvanced, setShowSubcategoryAdvanced] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -220,10 +222,13 @@ export default function AdminCategoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories & Subcategories</h1>
-          <p className="text-gray-600 mt-1">Manage storefront navigation and product organization</p>
+          <p className="text-gray-600 mt-1">Manage shop sections shown on the homepage and header menu.</p>
         </div>
         <button
-          onClick={() => setCategoryForm(emptyCategory())}
+          onClick={() => {
+            setShowCategoryAdvanced(false);
+            setCategoryForm(emptyCategory());
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus className="w-4 h-4" />
@@ -274,7 +279,8 @@ export default function AdminCategoriesPage() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        setShowCategoryAdvanced(true);
                         setCategoryForm({
                           id: cat.id,
                           name: cat.name,
@@ -283,8 +289,8 @@ export default function AdminCategoriesPage() {
                           image_url: cat.image_url || "",
                           sort_order: cat.sort_order,
                           is_active: cat.is_active,
-                        })
-                      }
+                        });
+                      }}
                       className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                     >
                       <Pencil className="w-4 h-4" />
@@ -366,10 +372,13 @@ export default function AdminCategoriesPage() {
 
       {categoryForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-1">
               {categoryForm.id ? "Edit Category" : "New Category"}
             </h2>
+            <p className="text-sm text-gray-500 mb-5">
+              Appears on the homepage and in the header menu.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -377,36 +386,19 @@ export default function AdminCategoriesPage() {
                   type="text"
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="e.g. Wedding, Home Decor"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slug (optional)</label>
-                <input
-                  type="text"
-                  value={categoryForm.slug}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-                  placeholder="auto-generated from name"
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={categoryForm.description}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                {categoryForm.image_url && (
-                  <div className="relative w-24 h-24 mb-2 rounded overflow-hidden">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
+                {categoryForm.image_url ? (
+                  <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
                     <Image src={categoryForm.image_url} alt="" fill className="object-cover" />
                   </div>
-                )}
-                <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                ) : null}
+                <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
                   <Upload className="w-4 h-4" />
                   {uploadingImage ? "Uploading..." : "Upload image"}
                   <input
@@ -425,31 +417,66 @@ export default function AdminCategoriesPage() {
                   />
                 </label>
               </div>
-              <div className="flex gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
-                  <input
-                    type="number"
-                    value={categoryForm.sort_order}
-                    onChange={(e) =>
-                      setCategoryForm({ ...categoryForm, sort_order: Number(e.target.value) })
-                    }
-                    className="w-24 px-3 py-2 border rounded-lg"
-                  />
+
+              <button
+                type="button"
+                onClick={() => setShowCategoryAdvanced((v) => !v)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                {showCategoryAdvanced ? "Hide advanced options" : "Show advanced options"}
+              </button>
+
+              {showCategoryAdvanced && (
+                <div className="space-y-4 pt-1 border-t border-gray-100">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Slug <span className="text-gray-400 font-normal">(auto-generated if empty)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={categoryForm.slug}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={categoryForm.description}
+                      onChange={(e) =>
+                        setCategoryForm({ ...categoryForm, description: e.target.value })
+                      }
+                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg"
+                    />
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
+                      <input
+                        type="number"
+                        value={categoryForm.sort_order}
+                        onChange={(e) =>
+                          setCategoryForm({ ...categoryForm, sort_order: Number(e.target.value) })
+                        }
+                        className="w-20 px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 pt-6">
+                      <input
+                        type="checkbox"
+                        checked={categoryForm.is_active}
+                        onChange={(e) =>
+                          setCategoryForm({ ...categoryForm, is_active: e.target.checked })
+                        }
+                      />
+                      <span className="text-sm">Visible on storefront</span>
+                    </label>
+                  </div>
                 </div>
-                <label className="flex items-center gap-2 mt-6">
-                  <input
-                    type="checkbox"
-                    checked={categoryForm.is_active}
-                    onChange={(e) =>
-                      setCategoryForm({ ...categoryForm, is_active: e.target.checked })
-                    }
-                  />
-                  <span className="text-sm">Active</span>
-                </label>
-              </div>
+              )}
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100">
               <button
                 onClick={() => setCategoryForm(null)}
                 className="px-4 py-2 border rounded-lg hover:bg-gray-50"

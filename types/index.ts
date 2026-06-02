@@ -20,27 +20,11 @@ export interface Product {
   subcategory?: string;
   inStock: boolean;
   stock?: number;
-  catalogId?: string;
-  catalogName?: string;
   categoryId?: string;
   subcategoryId?: string;
   pdfPage?: number;
   pdfItemRef?: string;
   sizes?: ProductSize[]; // Available sizes for this product
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface Catalog {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  type?: string;
-  pdfFileName?: string;
-  coverImage?: string;
-  isActive: boolean;
-  sortOrder?: number;
   createdAt: Date;
   updatedAt: Date;
 }

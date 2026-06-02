@@ -32,11 +32,7 @@ export default function Header() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { tree?: CatalogTree } | null) => {
         if (!data?.tree) return;
-        const all: CatalogTreeCategory[] = [
-          ...data.tree.globalCategories,
-          ...data.tree.catalogs.flatMap((c) => c.categories),
-        ];
-        setCategories(all);
+        setCategories(data.tree.categories);
       })
       .catch(console.error);
   }, []);

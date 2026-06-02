@@ -55,19 +55,6 @@ export async function getProductsByCategory(category: string): Promise<Product[]
 }
 
 /**
- * Get products by catalog
- */
-export async function getProductsByCatalog(catalogId: string): Promise<Product[]> {
-  try {
-    const products = await getAllProducts();
-    return products.filter((p) => p.catalogId === catalogId);
-  } catch (error) {
-    console.error("Error fetching products by catalog:", error);
-    return [];
-  }
-}
-
-/**
  * Get all categories
  */
 export async function getAllCategories(): Promise<string[]> {

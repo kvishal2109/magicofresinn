@@ -80,8 +80,6 @@ export async function PUT(
     if (body.subcategoryId !== undefined) updates.subcategoryId = body.subcategoryId;
     if (body.inStock !== undefined) updates.inStock = Boolean(body.inStock);
     if (body.stock !== undefined) updates.stock = body.stock ? Number(body.stock) : undefined;
-    if (body.catalogId !== undefined) updates.catalogId = body.catalogId;
-    if (body.catalogName !== undefined) updates.catalogName = body.catalogName;
 
     await SupabaseProducts.updateProduct(id, updates);
 
