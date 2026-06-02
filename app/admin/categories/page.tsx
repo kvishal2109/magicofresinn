@@ -113,6 +113,15 @@ export default function AdminCategoriesPage() {
     });
   };
 
+  const openAddSubcategory = async (categoryId: string) => {
+    setExpanded((prev) => new Set(prev).add(categoryId));
+    if (!subcategories[categoryId]) {
+      await fetchSubcategories(categoryId);
+    }
+    setShowSubcategoryAdvanced(false);
+    setSubcategoryForm(emptySubcategory(categoryId));
+  };
+
   const saveCategory = async () => {
     if (!categoryForm?.name.trim()) {
       toast.error("Category name is required");
@@ -223,7 +232,13 @@ export default function AdminCategoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories & Subcategories</h1>
-          <p className="text-gray-600 mt-1">Manage shop sections shown on the homepage and header menu.</p>
+          <p className="text-gray-600 mt-1">
+            Manage shop sections shown on the homepage and header menu.
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Create a <strong>category</strong> first (e.g. Wedding), then add{" "}
+            <strong>subcategories</strong> inside it (e.g. Jhumka, Rings).
+          </p>
         </div>
         <button
           onClick={() => {
@@ -246,12 +261,16 @@ export default function AdminCategoriesPage() {
           {categories.map((cat) => {
             const isOpen = expanded.has(cat.id);
             const subs = subcategories[cat.id] || [];
+            const subCount = subs.length;
             return (
               <div key={cat.id} className="p-4">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <button
                     onClick={() => toggleExpand(cat.id)}
-                    className="mt-1 p-1 hover:bg-gray-100 rounded"
+                    className="mt-1 p-1 hover:bg-gray-100 rounded shrink-0"
+                    aria-expanded={isOpen}
+                    aria-label={isOpen ? "Collapse subcategories" : "Expand subcategories"}
+                    title={isOpen ? "Hide subcategories" : "Show subcategories"}
                   >
                     {isOpen ? (
                       <ChevronDown className="w-5 h-5 text-gray-500" />
@@ -260,67 +279,86 @@ export default function AdminCategoriesPage() {
                     )}
                   </button>
                   {cat.image_url ? (
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden flex-shrink-0">
                       <Image src={cat.image_url} alt={cat.name} fill className="object-cover" />
                     </div>
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg bg-gray-100 flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold text-gray-900">{cat.name}</h3>
                       {!cat.is_active && (
                         <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">Hidden</span>
                       )}
+                      <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
+                        {subCount > 0 || isOpen
+                          ? `${subCount} subcategor${subCount === 1 ? "y" : "ies"}`
+                          : "Click ▶ to view subcategories"}
+                      </span>
                     </div>
-                    <p className="text-sm text-gray-500">/{cat.slug}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      Store link: <span className="font-mono text-gray-600">/products/{cat.slug}/…</span>
+                    </p>
                     {cat.description && (
                       <p className="text-sm text-gray-600 mt-1 line-clamp-2">{cat.description}</p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 shrink-0">
                     <button
-                      onClick={() => {
-                        setShowCategoryAdvanced(true);
-                        setCategoryForm({
-                          id: cat.id,
-                          name: cat.name,
-                          slug: cat.slug,
-                          description: cat.description || "",
-                          image_url: cat.image_url || "",
-                          sort_order: cat.sort_order,
-                          is_active: cat.is_active,
-                        });
-                      }}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                      onClick={() => openAddSubcategory(cat.id)}
+                      className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 text-xs sm:text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg whitespace-nowrap"
+                      title="Add a subcategory under this category"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
+                      Add subcategory
                     </button>
-                    <button
-                      onClick={() => deleteCategory(cat.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-1.5 sm:gap-2">
+                      <button
+                        onClick={() => {
+                          setShowCategoryAdvanced(true);
+                          setCategoryForm({
+                            id: cat.id,
+                            name: cat.name,
+                            slug: cat.slug,
+                            description: cat.description || "",
+                            image_url: cat.image_url || "",
+                            sort_order: cat.sort_order,
+                            is_active: cat.is_active,
+                          });
+                        }}
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        title="Edit category"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteCategory(cat.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        title="Delete category"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {isOpen && (
-                  <div className="mt-4 ml-9 pl-4 border-l-2 border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="mt-4 ml-8 sm:ml-9 pl-3 sm:pl-4 border-l-2 border-blue-100">
+                    <div className="flex items-center justify-between mb-3 gap-2">
                       <h4 className="text-sm font-medium text-gray-700">Subcategories</h4>
                       <button
-                        onClick={() => {
-                        setShowSubcategoryAdvanced(false);
-                        setSubcategoryForm(emptySubcategory(cat.id));
-                      }}
-                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        onClick={() => openAddSubcategory(cat.id)}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0"
                       >
-                        <Plus className="w-3 h-3" /> Add
+                        <Plus className="w-3.5 h-3.5" /> Add subcategory
                       </button>
                     </div>
                     {subs.length === 0 ? (
-                      <p className="text-sm text-gray-500">No subcategories</p>
+                      <p className="text-sm text-gray-500">
+                        No subcategories yet. Click <strong>Add subcategory</strong> to create one
+                        (e.g. Jhumka, Coasters).
+                      </p>
                     ) : (
                       <div className="space-y-2">
                         {subs.map((sub) => (
@@ -337,7 +375,9 @@ export default function AdminCategoriesPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm">{sub.name}</p>
-                              <p className="text-xs text-gray-500">/{sub.slug}</p>
+                              <p className="text-xs text-gray-500 font-mono">
+                                /products/{cat.slug}/{sub.slug}
+                              </p>
                             </div>
                             <button
                               onClick={() => {
@@ -450,14 +490,21 @@ export default function AdminCategoriesPage() {
               <div className="space-y-4 pt-1 border-t border-gray-100">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Slug <span className="text-gray-400 font-normal">(auto-generated if empty)</span>
+                    URL slug <span className="text-gray-400 font-normal">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={categoryForm.slug}
                     onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder="Auto from name, e.g. wedding"
+                    className="w-full px-3 py-2 border rounded-lg font-mono text-sm"
                   />
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    Used in store URLs. If left empty, it is created from the name (e.g.{" "}
+                    <span className="font-mono">Wedding</span> →{" "}
+                    <span className="font-mono">wedding</span>). Products page:{" "}
+                    <span className="font-mono">/products/wedding/jhumka</span>
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -571,13 +618,19 @@ export default function AdminCategoriesPage() {
             {showSubcategoryAdvanced && (
               <div className="space-y-4 pt-1 border-t border-gray-100">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Slug (optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL slug <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
                   <input
                     type="text"
                     value={subcategoryForm.slug}
                     onChange={(e) => setSubcategoryForm({ ...subcategoryForm, slug: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    placeholder="Auto from name, e.g. jhumka"
+                    className="w-full px-3 py-2 border rounded-lg font-mono text-sm"
                   />
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    Unique within this category. Auto-created from name if empty.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
