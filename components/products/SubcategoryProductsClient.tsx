@@ -17,6 +17,8 @@ export default function SubcategoryProductsClient({
   subcategoryName,
 }: SubcategoryProductsClientProps) {
   const router = useRouter();
+  const singleProduct = products.length === 1 ? products[0] : null;
+  const pageTitle = singleProduct ? singleProduct.name : subcategoryName;
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4">
@@ -32,12 +34,24 @@ export default function SubcategoryProductsClient({
           </button>
           <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl p-5 sm:p-8 border-2 border-purple-200 shadow-xl backdrop-blur-sm">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-3">
-              {subcategoryName}
+              {pageTitle}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-gray-600 text-sm sm:text-lg">
-              <span className="font-semibold text-purple-700">{categoryName}</span>
-              <span>•</span>
-              <span className="font-medium">{products.length} {products.length === 1 ? 'product' : 'products'}</span>
+              {singleProduct ? (
+                <>
+                  <span className="font-semibold text-purple-700">{categoryName}</span>
+                  <span>•</span>
+                  <span>{subcategoryName}</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-purple-700">{categoryName}</span>
+                  <span>•</span>
+                  <span className="font-medium">
+                    {products.length} {products.length === 1 ? "product" : "products"}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>

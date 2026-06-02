@@ -194,9 +194,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Product Info */}
         <div className="p-4 sm:p-5 relative z-10 bg-white/95 backdrop-blur-sm group-hover:bg-white transition-colors duration-300">
-          <p className="text-gray-700 text-sm mb-4 line-clamp-2 font-medium leading-relaxed group-hover:text-gray-900 transition-colors">
-            {product.description}
-          </p>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-purple-800 transition-colors">
+            {product.name}
+          </h3>
+          {product.description ? (
+            <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+              {product.description}
+            </p>
+          ) : null}
           
           {/* Size indicator for products with sizes */}
           {hasSizes && selectedSize && (

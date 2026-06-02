@@ -1,7 +1,7 @@
 import HomeClient from "@/components/home/HomeClient";
 import { getAllProducts } from "@/lib/supabase/products";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export default async function HomePage() {
   try {

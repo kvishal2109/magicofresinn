@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as SupabaseProducts from "@/lib/supabase/products";
+import { revalidateStorefrontCatalog } from "@/lib/revalidate-catalog";
 import { Product } from "@/types";
 
 // Shorter cache for admin - 30 seconds (admin needs fresh data)
@@ -86,9 +87,8 @@ export async function POST(request: NextRequest) {
     // Revalidate cache to show new product immediately
     try {
       revalidatePath("/api/admin/products");
-      revalidatePath("/api/products");
-      revalidatePath("/");
       revalidatePath("/admin/products");
+      await revalidateStorefrontCatalog(productId);
       console.log("Cache revalidated after product creation");
     } catch (error) {
       console.error("Error revalidating cache:", error);

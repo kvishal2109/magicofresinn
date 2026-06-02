@@ -3,7 +3,7 @@ import SubcategoryProductsClient from "@/components/products/SubcategoryProducts
 import { getAllProducts } from "@/lib/supabase/products";
 import { resolveCategorySubcategoryBySlugs } from "@/lib/supabase/catalog-db";
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 interface PageParams {
   category: string;

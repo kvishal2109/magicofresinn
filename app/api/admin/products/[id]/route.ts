@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/admin/auth";
 import * as SupabaseProducts from "@/lib/supabase/products";
+import { revalidateStorefrontCatalog } from "@/lib/revalidate-catalog";
 import { Product } from "@/types";
 
 export async function GET(
@@ -83,20 +84,12 @@ export async function PUT(
 
     await SupabaseProducts.updateProduct(id, updates);
 
-    // Revalidate all caches to show updated product immediately
     try {
-      // Revalidate API routes
       revalidatePath("/api/admin/products");
-      revalidatePath("/api/products");
-      revalidatePath(`/api/products/${id}`);
       revalidatePath(`/api/admin/products/${id}`);
-      
-      // Revalidate pages
-      revalidatePath("/");
       revalidatePath("/admin/products");
-      revalidatePath(`/product/${id}`);
       revalidatePath(`/admin/products/${id}/edit`);
-      
+      await revalidateStorefrontCatalog(id);
       console.log("Cache revalidated for product:", id);
     } catch (error) {
       console.error("Error revalidating cache:", error);
@@ -126,6 +119,14 @@ export async function DELETE(
 
     const { id } = await params;
     await SupabaseProducts.deleteProduct(id);
+
+    try {
+      revalidatePath("/api/admin/products");
+      revalidatePath("/admin/products");
+      await revalidateStorefrontCatalog(id);
+    } catch (error) {
+      console.error("Error revalidating cache after delete:", error);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
