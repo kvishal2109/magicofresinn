@@ -78,6 +78,10 @@ export default function Header() {
     setCategoriesMenuOpen(false);
   }, [pathname]);
 
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   const renderCategoryList = (variant: "desktop" | "mobile") =>
     categories.map((category) => {
       const isExpanded = expandedCategories.has(category.id);

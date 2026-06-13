@@ -170,9 +170,9 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      {/* Sidebar - Always visible on desktop, toggleable on mobile */}
+      {/* Sidebar — above mobile overlay */}
       <aside 
-        className={`bg-white shadow-xl w-[min(18rem,85vw)] md:w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-40 transition-transform duration-300 ease-in-out ${
+        className={`bg-white shadow-xl w-[min(18rem,85vw)] md:w-64 flex-shrink-0 h-screen fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -204,18 +204,19 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Sidebar overlay for mobile only */}
+      {/* Backdrop — below sidebar, above page content */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 md:ml-64">
         {/* Top bar */}
-        <header className="bg-white shadow-sm border-b sticky top-0 z-20">
+        <header className="bg-white shadow-sm border-b sticky top-0 z-30">
           <div className="px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
