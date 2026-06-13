@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
-import { getAllCategories } from "@/lib/supabase/products";
+import { listCategories } from "@/lib/supabase/catalog-db";
 
-// Cache categories API for 10 minutes (categories rarely change)
 export const revalidate = 600;
 
 export async function GET() {
   try {
-    const categories = await getAllCategories();
-    return NextResponse.json({ success: true, categories });
+    const categories = await listCategories(false);
+    return NextResponse.json({
+      success: true,
+      categories: categories.filter((c) => c.is_active).map((c) => c.name),
+    });
   } catch (error) {
     console.error("Error fetching categories:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch categories" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }
-

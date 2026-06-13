@@ -1,23 +1,25 @@
-import { getSizeConfigurations } from "@/lib/supabase/sizes";
 import { ProductSize } from "@/types";
 
-// Helper function to get sizes for a product
 export async function getProductSizes(product: {
   id: string;
-  subcategory?: string;
-  name: string;
 }): Promise<ProductSize[] | undefined> {
-  const key = product.subcategory || product.name;
-  const configurations = await getSizeConfigurations();
-  return configurations[product.id] || configurations[key] || configurations[product.name];
+  try {
+    const response = await fetch(`/api/products/${encodeURIComponent(product.id)}/sizes`);
+    if (!response.ok) return undefined;
+
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.sizes) || data.sizes.length === 0) {
+      return undefined;
+    }
+
+    return data.sizes as ProductSize[];
+  } catch (error) {
+    console.error("Error fetching product sizes:", error);
+    return undefined;
+  }
 }
 
-// Helper function to check if a product has size options
-export async function hasProductSizes(product: {
-  id: string;
-  subcategory?: string;
-  name: string;
-}): Promise<boolean> {
+export async function hasProductSizes(product: { id: string }): Promise<boolean> {
   const sizes = await getProductSizes(product);
   return !!sizes && sizes.length > 0;
 }

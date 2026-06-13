@@ -22,6 +22,8 @@ export interface Product {
   stock?: number;
   categoryId?: string;
   subcategoryId?: string;
+  categorySlug?: string;
+  subcategorySlug?: string;
   pdfPage?: number;
   pdfItemRef?: string;
   sizes?: ProductSize[]; // Available sizes for this product

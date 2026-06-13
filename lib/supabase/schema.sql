@@ -54,17 +54,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Categories metadata table (legacy — use categories/subcategories tables)
-CREATE TABLE IF NOT EXISTS categories_metadata (
-  id SERIAL PRIMARY KEY,
-  category_name TEXT NOT NULL,
-  subcategory_name TEXT,
-  image TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(category_name, subcategory_name)
-);
-
--- Admin password table
+-- Orders table
 CREATE TABLE IF NOT EXISTS admin_auth (
   id SERIAL PRIMARY KEY,
   password_hash TEXT NOT NULL,

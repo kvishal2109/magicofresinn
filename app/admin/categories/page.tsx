@@ -141,7 +141,7 @@ export default function AdminCategoriesPage() {
   };
 
   const deleteCategory = async (id: string) => {
-    if (!confirm("Delete this category and all its subcategories?")) return;
+    if (!confirm("Delete this category, its subcategories, and all products in it?")) return;
     try {
       const res = await fetch(`/api/admin/categories-v2?id=${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -184,7 +184,7 @@ export default function AdminCategoriesPage() {
   };
 
   const deleteSubcategory = async (id: string, categoryId: string) => {
-    if (!confirm("Delete this subcategory?")) return;
+    if (!confirm("Delete this subcategory and all products in it?")) return;
     try {
       const res = await fetch(`/api/admin/subcategories?id=${id}`, { method: "DELETE" });
       const data = await res.json();

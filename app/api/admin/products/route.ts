@@ -43,22 +43,20 @@ export async function POST(request: NextRequest) {
       discount,
       image,
       images,
-      category,
-      subcategory,
       categoryId,
       subcategoryId,
       inStock,
       stock,
     } = body;
 
-    // Validate required fields
     const missingFields: string[] = [];
     if (!name || name.trim() === "") missingFields.push("name");
     if (!description || description.trim() === "") missingFields.push("description");
     if (!price || price === "" || isNaN(Number(price))) missingFields.push("price");
     if (!image || image.trim() === "") missingFields.push("image");
-    if (!category || category.trim() === "") missingFields.push("category");
-    
+    if (!categoryId || String(categoryId).trim() === "") missingFields.push("categoryId");
+    if (!subcategoryId || String(subcategoryId).trim() === "") missingFields.push("subcategoryId");
+
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
@@ -74,10 +72,9 @@ export async function POST(request: NextRequest) {
       discount: discount ? Number(discount) : undefined,
       image,
       images: images || [],
-      category,
-      subcategory: subcategory || undefined,
-      categoryId: categoryId || undefined,
-      subcategoryId: subcategoryId || undefined,
+      category: "",
+      categoryId,
+      subcategoryId,
       inStock: inStock !== undefined ? Boolean(inStock) : true,
       stock: stock ? Number(stock) : undefined,
     };

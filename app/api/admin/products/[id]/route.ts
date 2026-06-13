@@ -75,8 +75,6 @@ export async function PUT(
     }
     if (body.image !== undefined) updates.image = body.image;
     if (body.images !== undefined) updates.images = body.images;
-    if (body.category !== undefined) updates.category = body.category;
-    if (body.subcategory !== undefined) updates.subcategory = body.subcategory;
     if (body.categoryId !== undefined) updates.categoryId = body.categoryId;
     if (body.subcategoryId !== undefined) updates.subcategoryId = body.subcategoryId;
     if (body.inStock !== undefined) updates.inStock = Boolean(body.inStock);

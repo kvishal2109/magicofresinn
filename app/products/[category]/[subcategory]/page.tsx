@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import SubcategoryProductsClient from "@/components/products/SubcategoryProductsClient";
-import { getAllProducts } from "@/lib/supabase/products";
+import { getProductsByCatalog } from "@/lib/supabase/products";
 import { resolveCategorySubcategoryBySlugs } from "@/lib/supabase/catalog-db";
 
 export const revalidate = 60;
@@ -9,8 +9,6 @@ interface PageParams {
   category: string;
   subcategory: string;
 }
-
-const normalize = (value: string) => value.trim().toLowerCase();
 
 export default async function SubcategoryProductsPage({
   params,
@@ -33,15 +31,7 @@ export default async function SubcategoryProductsPage({
   }
 
   const { category, subcategory } = resolved;
-  const allProducts = await getAllProducts();
-
-  const filteredProducts = allProducts.filter(
-    (product) =>
-      (product.categoryId === category.id ||
-        normalize(product.category) === normalize(category.name)) &&
-      (product.subcategoryId === subcategory.id ||
-        normalize(product.subcategory || "") === normalize(subcategory.name))
-  );
+  const filteredProducts = await getProductsByCatalog(category.id, subcategory.id);
 
   return (
     <SubcategoryProductsClient

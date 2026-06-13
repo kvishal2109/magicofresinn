@@ -13,12 +13,6 @@ import { calculateDiscount } from "@/lib/utils/format";
 import toast from "react-hot-toast";
 import { Heart, ShoppingCart, Sparkles } from "lucide-react";
 
-const toSlug = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
 export default function WishlistPage() {
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -178,9 +172,9 @@ function WishlistItemCard({ product, onMoveToCart }: WishlistItemCardProps) {
   const discount = hasPriceDrop && product.originalPrice ? calculateDiscount(product.originalPrice, product.price) : 0;
 
   const similarLink =
-    product.category && product.subcategory
-      ? `/products/${toSlug(product.category)}/${toSlug(product.subcategory)}`
-      : "/products";
+    product.categorySlug && product.subcategorySlug
+      ? `/products/${product.categorySlug}/${product.subcategorySlug}`
+      : "/";
 
   return (
     <div className="space-y-3">

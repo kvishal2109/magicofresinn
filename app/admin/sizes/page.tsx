@@ -102,12 +102,7 @@ export default function SizesPage() {
       const normalizedConfigurations: SizeConfig = {};
 
       loadedProducts.forEach((product) => {
-        const legacySubcategoryKey = product.subcategory?.trim();
-        const productConfig =
-          rawConfigurations[product.id] ||
-          (legacySubcategoryKey ? rawConfigurations[legacySubcategoryKey] : undefined) ||
-          rawConfigurations[product.name];
-
+        const productConfig = rawConfigurations[product.id];
         if (productConfig?.length) {
           normalizedConfigurations[product.id] = productConfig;
         }

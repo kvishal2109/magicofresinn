@@ -81,27 +81,7 @@ export default function ProductForm({
       inStock: product.inStock ?? true,
       stock: product.stock?.toString() || "",
     });
-
-    if (!product.categoryId && product.category && categories.length > 0) {
-      const match = categories.find(
-        (c) => c.name.trim().toLowerCase() === product.category.trim().toLowerCase()
-      );
-      if (match) {
-        setFormData((prev) => ({ ...prev, categoryId: match.id }));
-      }
-    }
-  }, [product, categories]);
-
-  useEffect(() => {
-    if (!product?.subcategoryId && product?.subcategory && subcategories.length > 0) {
-      const match = subcategories.find(
-        (s) => s.name.trim().toLowerCase() === (product.subcategory || "").trim().toLowerCase()
-      );
-      if (match) {
-        setFormData((prev) => ({ ...prev, subcategoryId: match.id }));
-      }
-    }
-  }, [product, subcategories]);
+  }, [product]);
 
   const formatNumber = (value: number) => {
     if (!Number.isFinite(value)) return "";
@@ -161,6 +141,12 @@ export default function ProductForm({
         return;
       }
 
+      if (!formData.subcategoryId || !selectedSubcategory) {
+        toast.error("Please select a subcategory");
+        setLoading(false);
+        return;
+      }
+
       const primaryImage = formData.images[0] || formData.image;
       if (!primaryImage || primaryImage.trim() === "") {
         toast.error("Please upload at least one product image");
@@ -178,10 +164,8 @@ export default function ProductForm({
       const submitData = {
         name: formData.name,
         description: formData.description,
-        category: selectedCategory.name,
-        subcategory: selectedSubcategory?.name || undefined,
         categoryId: formData.categoryId,
-        subcategoryId: formData.subcategoryId || undefined,
+        subcategoryId: formData.subcategoryId,
         price: priceValue,
         originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
         discount: formData.discount ? Number(formData.discount) : undefined,
@@ -246,7 +230,7 @@ export default function ProductForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Subcategory
+            Subcategory *
           </label>
           <select
             value={formData.subcategoryId || ""}
@@ -254,9 +238,10 @@ export default function ProductForm({
               setFormData({ ...formData, subcategoryId: e.target.value || "" })
             }
             disabled={!formData.categoryId}
+            required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
-            <option value="">No subcategory</option>
+            <option value="">Select subcategory</option>
             {subcategories.map((sub) => (
               <option key={sub.id} value={sub.id}>
                 {sub.name}

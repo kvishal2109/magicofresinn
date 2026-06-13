@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllProducts, getProductsByCategory } from "@/lib/supabase/products";
+import { getAllProducts } from "@/lib/supabase/products";
 
 // Cache public products API for 5 minutes
 export const revalidate = 300;

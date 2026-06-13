@@ -143,6 +143,13 @@ export async function updateCategory(
 
 export async function deleteCategory(id: string): Promise<void> {
   const supabase = getSupabaseAdmin();
+
+  const { error: productError } = await supabase
+    .from("products")
+    .delete()
+    .eq("category_id", id);
+  if (productError) throw productError;
+
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw error;
 }
@@ -237,11 +244,32 @@ export async function updateSubcategory(
       .eq("subcategory_id", id);
   }
 
+  if (updates.category_id !== undefined && updates.category_id !== existing.category_id) {
+    const category = await getCategoryById(updates.category_id);
+    if (category) {
+      await supabase
+        .from("products")
+        .update({
+          category_id: updates.category_id,
+          category: category.name,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("subcategory_id", id);
+    }
+  }
+
   return mapSubcategory(data);
 }
 
 export async function deleteSubcategory(id: string): Promise<void> {
   const supabase = getSupabaseAdmin();
+
+  const { error: productError } = await supabase
+    .from("products")
+    .delete()
+    .eq("subcategory_id", id);
+  if (productError) throw productError;
+
   const { error } = await supabase.from("subcategories").delete().eq("id", id);
   if (error) throw error;
 }

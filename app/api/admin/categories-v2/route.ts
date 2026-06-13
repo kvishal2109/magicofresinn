@@ -12,7 +12,6 @@ function revalidateCategoryPaths() {
   try {
     revalidatePath("/");
     revalidatePath("/api/catalog-tree");
-    revalidatePath("/api/categories");
     revalidatePath("/admin/categories");
     revalidatePath("/products/[category]/[subcategory]", "page");
   } catch (e) {
