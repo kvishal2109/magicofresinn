@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Plus, Trash2, Pencil, ChevronDown, ChevronRight, Upload } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import AdminModal from "@/components/admin/AdminModal";
+import SingleImageUpload from "@/components/admin/SingleImageUpload";
 import type { DbCategory, DbSubcategory } from "@/lib/supabase/catalog-types";
 
 interface CategoryForm {
@@ -47,16 +48,6 @@ const emptySubcategory = (categoryId: string): SubcategoryForm => ({
   is_active: true,
 });
 
-async function uploadFile(file: File, folder: string): Promise<string> {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("folder", folder);
-  const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Upload failed");
-  return data.url;
-}
-
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<DbCategory[]>([]);
   const [subcategories, setSubcategories] = useState<Record<string, DbSubcategory[]>>({});
@@ -64,7 +55,6 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [categoryForm, setCategoryForm] = useState<CategoryForm | null>(null);
   const [subcategoryForm, setSubcategoryForm] = useState<SubcategoryForm | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [showCategoryAdvanced, setShowCategoryAdvanced] = useState(false);
   const [showSubcategoryAdvanced, setShowSubcategoryAdvanced] = useState(false);
 
@@ -133,7 +123,7 @@ export default function AdminCategoriesPage() {
         name: categoryForm.name.trim(),
         slug: categoryForm.slug.trim() || undefined,
         description: categoryForm.description.trim() || undefined,
-        image_url: categoryForm.image_url || undefined,
+        image_url: categoryForm.image_url.trim() ? categoryForm.image_url.trim() : null,
       };
       const res = await fetch("/api/admin/categories-v2", {
         method: categoryForm.id ? "PUT" : "POST",
@@ -174,7 +164,7 @@ export default function AdminCategoriesPage() {
         name: subcategoryForm.name.trim(),
         slug: subcategoryForm.slug.trim() || undefined,
         description: subcategoryForm.description.trim() || undefined,
-        image_url: subcategoryForm.image_url || undefined,
+        image_url: subcategoryForm.image_url.trim() ? subcategoryForm.image_url.trim() : null,
       };
       const res = await fetch("/api/admin/subcategories", {
         method: subcategoryForm.id ? "PUT" : "POST",
@@ -203,23 +193,6 @@ export default function AdminCategoriesPage() {
       fetchSubcategories(categoryId);
     } catch (e: any) {
       toast.error(e.message || "Delete failed");
-    }
-  };
-
-  const handleImageUpload = async (
-    file: File,
-    folder: string,
-    onUrl: (url: string) => void
-  ) => {
-    setUploadingImage(true);
-    try {
-      const url = await uploadFile(file, folder);
-      onUrl(url);
-      toast.success("Image uploaded");
-    } catch (e: any) {
-      toast.error(e.message || "Upload failed");
-    } finally {
-      setUploadingImage(false);
     }
   };
 
@@ -455,29 +428,14 @@ export default function AdminCategoriesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Cover image</label>
-              {categoryForm.image_url ? (
-                <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
-                  <Image src={categoryForm.image_url} alt="" fill className="object-cover" />
-                </div>
-              ) : null}
-              <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
-                <Upload className="w-4 h-4" />
-                {uploadingImage ? "Uploading..." : "Upload image"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadingImage}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleImageUpload(file, "categories", (url) =>
-                        setCategoryForm((f) => f && { ...f, image_url: url })
-                      );
-                    }
-                  }}
-                />
-              </label>
+              <SingleImageUpload
+                value={categoryForm.image_url || undefined}
+                onChange={(url) =>
+                  setCategoryForm((f) => f && { ...f, image_url: url || "" })
+                }
+                folder="categories"
+                label="Upload image"
+              />
             </div>
             <button
               type="button"
@@ -584,29 +542,14 @@ export default function AdminCategoriesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-              {subcategoryForm.image_url ? (
-                <div className="relative w-20 h-20 mb-2 rounded-lg overflow-hidden border">
-                  <Image src={subcategoryForm.image_url} alt="" fill className="object-cover" />
-                </div>
-              ) : null}
-              <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
-                <Upload className="w-4 h-4" />
-                {uploadingImage ? "Uploading..." : "Upload image"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadingImage}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleImageUpload(file, "subcategories", (url) =>
-                        setSubcategoryForm((f) => f && { ...f, image_url: url })
-                      );
-                    }
-                  }}
-                />
-              </label>
+              <SingleImageUpload
+                value={subcategoryForm.image_url || undefined}
+                onChange={(url) =>
+                  setSubcategoryForm((f) => f && { ...f, image_url: url || "" })
+                }
+                folder="subcategories"
+                label="Upload image"
+              />
             </div>
             <button
               type="button"
